@@ -1,0 +1,45 @@
+# Dependencias
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+backend/dist/
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+.env.*.local
+backend/.env
+frontend/.env
+
+# Bases de datos locales
+*.sqlite
+*.db
+backend/database/*.sqlite
+backend/backup_*/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor y sistema
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Archivos temporales
+*.tmp
+*.temp
+.cache/
