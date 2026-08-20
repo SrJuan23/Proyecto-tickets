@@ -314,7 +314,7 @@ class DatabaseService {
       const stmt = this.sqliteDb.prepare(sql);
       return stmt.all(...params) as T[];
     } else if (this.pgPool) {
-      const res = await this.pgPool.query(sql, params);
+      const res = await this.pgPool.query(this.toPostgresSql(sql), params);
       return res.rows as T[];
     } else if (this.mysqlPool) {
       const [rows] = await this.mysqlPool.execute(sql, params);
@@ -329,7 +329,7 @@ class DatabaseService {
       const row = this.sqliteDb.get(sql, params);
       return (row as T) || null;
     } else if (this.pgPool) {
-      const res = await this.pgPool.query(sql, params);
+      const res = await this.pgPool.query(this.toPostgresSql(sql), params);
       return (res.rows[0] as T) || null;
     } else if (this.mysqlPool) {
       const [rows] = await this.mysqlPool.execute(sql, params);
@@ -348,7 +348,7 @@ class DatabaseService {
         changes: info.changes
       };
     } else if (this.pgPool) {
-      const res = await this.pgPool.query(sql, params);
+      const res = await this.pgPool.query(this.toPostgresSql(sql), params);
       return {
         lastInsertRowid: res.oid ? Number(res.oid) : (res.rowCount || 0),
         changes: res.rowCount || 0
@@ -361,6 +361,11 @@ class DatabaseService {
       };
     }
     return {};
+  }
+
+  private toPostgresSql(sql: string): string {
+    let parameterIndex = 0;
+    return sql.replace(/\?/g, () => `$${++parameterIndex}`);
   }
 }
 

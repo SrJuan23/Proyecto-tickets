@@ -300,7 +300,7 @@ class DatabaseService {
             return stmt.all(...params);
         }
         else if (this.pgPool) {
-            const res = await this.pgPool.query(sql, params);
+            const res = await this.pgPool.query(this.toPostgresSql(sql), params);
             return res.rows;
         }
         else if (this.mysqlPool) {
@@ -316,7 +316,7 @@ class DatabaseService {
             return row || null;
         }
         else if (this.pgPool) {
-            const res = await this.pgPool.query(sql, params);
+            const res = await this.pgPool.query(this.toPostgresSql(sql), params);
             return res.rows[0] || null;
         }
         else if (this.mysqlPool) {
@@ -336,7 +336,7 @@ class DatabaseService {
             };
         }
         else if (this.pgPool) {
-            const res = await this.pgPool.query(sql, params);
+            const res = await this.pgPool.query(this.toPostgresSql(sql), params);
             return {
                 lastInsertRowid: res.oid ? Number(res.oid) : (res.rowCount || 0),
                 changes: res.rowCount || 0
@@ -350,6 +350,10 @@ class DatabaseService {
             };
         }
         return {};
+    }
+    toPostgresSql(sql) {
+        let parameterIndex = 0;
+        return sql.replace(/\?/g, () => `$${++parameterIndex}`);
     }
 }
 exports.db = new DatabaseService();
