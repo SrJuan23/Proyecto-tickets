@@ -141,10 +141,11 @@ app.get('/assets/:file', (req, res) => {
     try {
         const content = fs_1.default.readFileSync(filePath);
         const ext = path_1.default.extname(filePath);
-        const contentType = ext === '.js' ? 'application/javascript' :
-            ext === '.css' ? 'text/css' :
-                ext === '.html' ? 'text/html' : 'application/octet-stream';
+        const contentType = ext === '.js' ? 'application/javascript; charset=utf-8' :
+            ext === '.css' ? 'text/css; charset=utf-8' :
+                ext === '.html' ? 'text/html; charset=utf-8' : 'application/octet-stream';
         res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
         res.send(content);
     }
     catch (err) {
