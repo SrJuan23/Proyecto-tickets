@@ -135,25 +135,35 @@ app.use('/api/usuarios', userRoutes);
 
 const publicDir = path.join(__dirname, '../../frontend/dist');
 const publicDirAlt = path.join(process.cwd(), 'frontend/dist');
-const resolvedPublicDir = fs.existsSync(publicDirAlt) ? publicDirAlt : publicDir;
+const resolvedPublicDir = fs.existsSync(publicDirAlt) ? publicDirAlt : (fs.existsSync(publicDir) ? publicDir : process.cwd());
 
 logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
-logger.info(`Archivos en publicDir: ${fs.existsSync(resolvedPublicDir) ? 'EXISTE' : 'NO EXISTE'}`);
+logger.info(`CWD: ${process.cwd()}`);
+logger.info(`publicDir existe: ${fs.existsSync(publicDir)}`);
+logger.info(`publicDirAlt existe: ${fs.existsSync(publicDirAlt)}`);
+logger.info(`resolvedPublicDir existe: ${fs.existsSync(resolvedPublicDir)}`);
+
 if (fs.existsSync(resolvedPublicDir)) {
-  logger.info(`Contenido: ${fs.readdirSync(resolvedPublicDir).join(', ')}`);
+  const contents = fs.readdirSync(resolvedPublicDir);
+  logger.info(`Contenido de resolvedPublicDir: ${contents.join(', ')}`);
+  
+  const assetsDir = path.join(resolvedPublicDir, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    const assets = fs.readdirSync(assetsDir);
+    logger.info(`Assets disponibles: ${assets.join(', ')}`);
+  }
 }
 
 app.use(express.static(resolvedPublicDir));
 
 app.get('/assets/:file', (req, res) => {
   const filePath = path.join(resolvedPublicDir, 'assets', req.params.file);
-  logger.info(`Sirviendo asset: ${filePath}, existe: ${fs.existsSync(filePath)}`);
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      logger.error(`Error sirviendo asset ${filePath}:`, err);
-      res.status(500).json({ error: 'Asset not found', file: req.params.file, path: filePath });
-    }
-  });
+  const exists = fs.existsSync(filePath);
+  logger.info(`Sirviendo asset: ${filePath}, existe: ${exists}`);
+  if (!exists) {
+    return res.status(500).json({ error: 'Asset not found', file: req.params.file, path: filePath });
+  }
+  res.sendFile(filePath);
 });
 
 app.get('*', (req, res, next) => {
