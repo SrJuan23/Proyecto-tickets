@@ -130,28 +130,39 @@ const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
 const publicDirAlt = path_1.default.join(process.cwd(), 'frontend/dist');
 const resolvedPublicDir = fs_1.default.existsSync(publicDirAlt) ? publicDirAlt : (fs_1.default.existsSync(publicDir) ? publicDir : process.cwd());
 logger_1.logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
-app.use('/assets', express_1.default.static(path_1.default.join(resolvedPublicDir, 'assets')));
+logger_1.logger.info(`CWD: ${process.cwd()}`);
 app.get('/assets/:file', (req, res) => {
     const filePath = path_1.default.join(resolvedPublicDir, 'assets', req.params.file);
     logger_1.logger.info(`Sirviendo asset: ${filePath}`);
-    res.sendFile(filePath, (err) => {
-        if (err) {
-            logger_1.logger.error(`Error sirviendo asset:`, err);
-            res.status(500).json({ error: 'Asset not found', file: req.params.file });
-        }
-    });
+    if (!fs_1.default.existsSync(filePath)) {
+        logger_1.logger.error(`Asset no encontrado: ${filePath}`);
+        return res.status(500).json({ error: 'Asset not found', file: req.params.file });
+    }
+    try {
+        const content = fs_1.default.readFileSync(filePath);
+        const ext = path_1.default.extname(filePath);
+        const contentType = ext === '.js' ? 'application/javascript' :
+            ext === '.css' ? 'text/css' :
+                ext === '.html' ? 'text/html' : 'application/octet-stream';
+        res.setHeader('Content-Type', contentType);
+        res.send(content);
+    }
+    catch (err) {
+        logger_1.logger.error(`Error leyendo asset:`, err);
+        res.status(500).json({ error: 'Error reading asset', file: req.params.file });
+    }
 });
 app.use(express_1.default.static(resolvedPublicDir));
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
         return next();
     }
-    const indexPath = path_1.default.join(publicDir, 'index.html');
+    const indexPath = path_1.default.join(resolvedPublicDir, 'index.html');
+    logger_1.logger.info(`Sirviendo index.html desde: ${indexPath}, existe: ${fs_1.default.existsSync(indexPath)}`);
     res.sendFile(indexPath, (err) => {
         if (err) {
-            res.json({
-                message: 'API de Support Desk en ejecución. El frontend se sirve de forma independiente o compilada en /frontend/dist'
-            });
+            logger_1.logger.error(`Error sirviendo index.html:`, err);
+            res.status(500).json({ error: 'index.html not found', path: indexPath });
         }
     });
 });
