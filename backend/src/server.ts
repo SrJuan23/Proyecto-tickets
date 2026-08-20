@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { db } from './services/db';
 import { seedDatabase } from './services/seed';
@@ -46,7 +47,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],
@@ -132,7 +134,11 @@ app.use('/api/config', configRoutes);
 app.use('/api/usuarios', userRoutes);
 
 const publicDir = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(publicDir));
+const publicDirAlt = path.join(process.cwd(), 'frontend/dist');
+const resolvedPublicDir = fs.existsSync(publicDir) ? publicDir : publicDirAlt;
+
+logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
+app.use(express.static(resolvedPublicDir));
 
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
