@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import { Pool } from 'pg';
 
 dotenv.config();
 
@@ -12,11 +13,13 @@ export interface QueryResult {
 class DatabaseService {
   private sqliteDb: any = null;
   private mysqlPool: any = null;
+  private pgPool: Pool | null = null;
   private isSqlite = true;
+  private dbClient: string = 'sqlite';
 
   constructor() {
-    const client = process.env.DB_CLIENT || 'sqlite';
-    this.isSqlite = client.toLowerCase() === 'sqlite';
+    this.dbClient = (process.env.DB_CLIENT || 'sqlite').toLowerCase();
+    this.isSqlite = this.dbClient === 'sqlite';
   }
 
   public async initialize(): Promise<void> {
@@ -29,13 +32,12 @@ class DatabaseService {
       }
 
       this.sqliteDb = new Database(dbPath);
-      // Enable WAL mode and foreign keys for high reliability
       this.sqliteDb.pragma('journal_mode = WAL');
       this.sqliteDb.pragma('foreign_keys = ON');
 
       console.log(`[DB] Conectado exitosamente a SQLite: ${dbPath}`);
       this.initSqliteSchema();
-    } else {
+    } else if (this.dbClient === 'mysql') {
       const mysql = require('mysql2/promise');
       this.mysqlPool = mysql.createPool({
         host: process.env.DB_HOST || 'localhost',
@@ -51,7 +53,110 @@ class DatabaseService {
       });
 
       console.log(`[DB] Conectado exitosamente al pool de MySQL: ${process.env.DB_HOST}:${process.env.DB_PORT}`);
+    } else if (this.dbClient === 'postgres') {
+      const connectionString = process.env.DATABASE_URL || process.env.DB_HOST || '';
+      
+      this.pgPool = new Pool({
+        connectionString: connectionString,
+        max: 10
+      });
+
+      console.log(`[DB] Conectado exitosamente a PostgreSQL`);
+      await this.initPostgresSchema();
     }
+  }
+
+  private async initPostgresSchema(): Promise<void> {
+    const schemaSql = `
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(150) NOT NULL,
+        email VARCHAR(150) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        rol VARCHAR(50) NOT NULL DEFAULT 'AGENTE',
+        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        avatar_url VARCHAR(255) NULL,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS clientes (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(200) NOT NULL UNIQUE,
+        nit VARCHAR(50) NULL,
+        contacto_principal VARCHAR(150) NULL,
+        correo_contacto VARCHAR(150) NULL,
+        telefono VARCHAR(50) NULL,
+        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS plataformas (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL UNIQUE,
+        descripcion VARCHAR(255) NULL,
+        color_badge VARCHAR(50) DEFAULT '#0945F7',
+        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS agentes (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(150) NOT NULL UNIQUE,
+        email VARCHAR(150) NULL,
+        telefono VARCHAR(50) NULL,
+        especialidad VARCHAR(100) NULL,
+        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS tickets (
+        id SERIAL PRIMARY KEY,
+        prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
+        cliente_id INTEGER NOT NULL REFERENCES clientes(id),
+        asunto VARCHAR(255) NOT NULL,
+        descripcion TEXT NOT NULL,
+        plataforma_id INTEGER NOT NULL REFERENCES plataformas(id),
+        solicitante VARCHAR(150) NOT NULL,
+        fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        servicenow VARCHAR(50) NULL,
+        turno VARCHAR(10) NOT NULL DEFAULT 'NA',
+        agente_id INTEGER NULL REFERENCES agentes(id),
+        estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        fecha_cierre TIMESTAMP NULL,
+        tiempo_atencion_minutos INTEGER NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS historial_ticket (
+        id SERIAL PRIMARY KEY,
+        ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+        usuario_nombre VARCHAR(150) NOT NULL,
+        accion VARCHAR(100) NOT NULL,
+        descripcion TEXT NOT NULL,
+        valor_anterior TEXT NULL,
+        valor_nuevo TEXT NULL,
+        fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS configuracion (
+        clave VARCHAR(100) PRIMARY KEY,
+        valor TEXT NOT NULL,
+        descripcion VARCHAR(255) NULL,
+        fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado);
+      CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad);
+      CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id);
+      CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id);
+      CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id);
+      CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno);
+      CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion);
+      CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow);
+    `;
+
+    await this.pgPool!.query(schemaSql);
+    console.log('[DB] Schema PostgreSQL inicializado correctamente');
   }
 
   private initSqliteSchema(): void {
@@ -148,7 +253,6 @@ class DatabaseService {
     `;
 
     this.sqliteDb.exec(schemaSql);
-
     this.migrateTicketsAgenteNullable();
   }
 
@@ -209,22 +313,30 @@ class DatabaseService {
     if (this.isSqlite) {
       const stmt = this.sqliteDb.prepare(sql);
       return stmt.all(...params) as T[];
-    } else {
+    } else if (this.pgPool) {
+      const res = await this.pgPool.query(sql, params);
+      return res.rows as T[];
+    } else if (this.mysqlPool) {
       const [rows] = await this.mysqlPool.execute(sql, params);
       return rows as T[];
     }
+    return [];
   }
 
   public async get<T = any>(sql: string, params: any[] = []): Promise<T | null> {
     if (this.isSqlite) {
       const stmt = this.sqliteDb.prepare(sql);
-      const row = stmt.get(...params);
+      const row = this.sqliteDb.get(sql, params);
       return (row as T) || null;
-    } else {
+    } else if (this.pgPool) {
+      const res = await this.pgPool.query(sql, params);
+      return (res.rows[0] as T) || null;
+    } else if (this.mysqlPool) {
       const [rows] = await this.mysqlPool.execute(sql, params);
       const arr = rows as T[];
       return arr.length > 0 ? arr[0] : null;
     }
+    return null;
   }
 
   public async run(sql: string, params: any[] = []): Promise<QueryResult> {
@@ -235,13 +347,20 @@ class DatabaseService {
         lastInsertRowid: Number(info.lastInsertRowid),
         changes: info.changes
       };
-    } else {
+    } else if (this.pgPool) {
+      const res = await this.pgPool.query(sql, params);
+      return {
+        lastInsertRowid: res.oid ? Number(res.oid) : (res.rowCount || 0),
+        changes: res.rowCount || 0
+      };
+    } else if (this.mysqlPool) {
       const [result] = await this.mysqlPool.execute(sql, params);
       return {
         lastInsertRowid: result.insertId,
         changes: result.affectedRows
       };
     }
+    return {};
   }
 }
 
