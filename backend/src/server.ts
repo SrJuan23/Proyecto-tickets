@@ -138,41 +138,23 @@ const publicDirAlt = path.join(process.cwd(), 'frontend/dist');
 const resolvedPublicDir = fs.existsSync(publicDirAlt) ? publicDirAlt : (fs.existsSync(publicDir) ? publicDir : process.cwd());
 
 logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
-logger.info(`CWD: ${process.cwd()}`);
-logger.info(`publicDir existe: ${fs.existsSync(publicDir)}`);
-logger.info(`publicDirAlt existe: ${fs.existsSync(publicDirAlt)}`);
-logger.info(`resolvedPublicDir existe: ${fs.existsSync(resolvedPublicDir)}`);
-
-if (fs.existsSync(resolvedPublicDir)) {
-  const contents = fs.readdirSync(resolvedPublicDir);
-  logger.info(`Contenido de resolvedPublicDir: ${contents.join(', ')}`);
-  
-  const assetsDir = path.join(resolvedPublicDir, 'assets');
-  if (fs.existsSync(assetsDir)) {
-    const assets = fs.readdirSync(assetsDir);
-    logger.info(`Assets disponibles: ${assets.join(', ')}`);
-  }
-}
-
 app.use(express.static(resolvedPublicDir));
+app.use('/assets', express.static(path.join(resolvedPublicDir, 'assets')));
 
-app.get('/debug/assets', (req, res) => {
-  const publicDir = path.join(__dirname, '../../frontend/dist');
-  const publicDirAlt = path.join(process.cwd(), 'frontend/dist');
-  
-  const debug = {
-    cwd: process.cwd(),
-    __dirname: __dirname,
-    publicDir: publicDir,
-    publicDirAlt: publicDirAlt,
-    publicDirExists: fs.existsSync(publicDir),
-    publicDirAltExists: fs.existsSync(publicDirAlt),
-    publicDirContent: fs.existsSync(publicDir) ? fs.readdirSync(publicDir) : [],
-    publicDirAltContent: fs.existsSync(publicDirAlt) ? fs.readdirSync(publicDirAlt) : []
-  };
-  
-  logger.info('Debug assets:', debug);
-  res.json(debug);
+app.get('/assets/:file', (req, res) => {
+  const filePath = path.join(resolvedPublicDir, 'assets', req.params.file);
+  logger.info(`Sirviendo asset manual: ${filePath}, existe: ${fs.existsSync(filePath)}`);
+  if (!fs.existsSync(filePath)) {
+    const assetsDir = path.join(resolvedPublicDir, 'assets');
+    const available = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir) : [];
+    return res.status(500).json({ 
+      error: 'Asset not found', 
+      file: req.params.file, 
+      path: filePath,
+      availableAssets: available
+    });
+  }
+  res.sendFile(filePath);
 });
 
 app.get('/assets/:file', (req, res) => {
