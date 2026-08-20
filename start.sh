@@ -1,4 +1,7 @@
 #!/bin/bash
-cd backend
-npm install --production
-node dist/server.js
+set -e
+
+cd "$(dirname "$0")"
+npm run install:all
+npm run build
+npm start

@@ -146,7 +146,7 @@ app.get('/assets/:file', (req, res) => {
   
   if (!fs.existsSync(filePath)) {
     logger.error(`Asset no encontrado: ${filePath}`);
-    return res.status(500).json({ error: 'Asset not found', file: req.params.file });
+    return res.status(404).json({ error: 'Asset not found', file: req.params.file });
   }
   
   try {
