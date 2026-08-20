@@ -144,12 +144,36 @@ if (fs_1.default.existsSync(resolvedPublicDir)) {
     }
 }
 app.use(express_1.default.static(resolvedPublicDir));
+app.get('/debug/assets', (req, res) => {
+    const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
+    const publicDirAlt = path_1.default.join(process.cwd(), 'frontend/dist');
+    const debug = {
+        cwd: process.cwd(),
+        __dirname: __dirname,
+        publicDir: publicDir,
+        publicDirAlt: publicDirAlt,
+        publicDirExists: fs_1.default.existsSync(publicDir),
+        publicDirAltExists: fs_1.default.existsSync(publicDirAlt),
+        publicDirContent: fs_1.default.existsSync(publicDir) ? fs_1.default.readdirSync(publicDir) : [],
+        publicDirAltContent: fs_1.default.existsSync(publicDirAlt) ? fs_1.default.readdirSync(publicDirAlt) : []
+    };
+    logger_1.logger.info('Debug assets:', debug);
+    res.json(debug);
+});
 app.get('/assets/:file', (req, res) => {
-    const filePath = path_1.default.join(resolvedPublicDir, 'assets', req.params.file);
-    const exists = fs_1.default.existsSync(filePath);
-    logger_1.logger.info(`Sirviendo asset: ${filePath}, existe: ${exists}`);
-    if (!exists) {
-        return res.status(500).json({ error: 'Asset not found', file: req.params.file, path: filePath });
+    const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
+    const publicDirAlt = path_1.default.join(process.cwd(), 'frontend/dist');
+    const baseDir = fs_1.default.existsSync(publicDirAlt) ? publicDirAlt : publicDir;
+    const filePath = path_1.default.join(baseDir, 'assets', req.params.file);
+    logger_1.logger.info(`Sirviendo asset: ${filePath}, existe: ${fs_1.default.existsSync(filePath)}`);
+    if (!fs_1.default.existsSync(filePath)) {
+        return res.status(500).json({
+            error: 'Asset not found',
+            file: req.params.file,
+            path: filePath,
+            cwd: process.cwd(),
+            baseDir: baseDir
+        });
     }
     res.sendFile(filePath);
 });
