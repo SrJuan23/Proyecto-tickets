@@ -128,9 +128,19 @@ app.use('/api/config', configRoutes_1.default);
 app.use('/api/usuarios', userRoutes_1.default);
 const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
 const publicDirAlt = path_1.default.join(process.cwd(), 'frontend/dist');
-const resolvedPublicDir = fs_1.default.existsSync(publicDir) ? publicDir : publicDirAlt;
+const resolvedPublicDir = fs_1.default.existsSync(publicDirAlt) ? publicDirAlt : publicDir;
 logger_1.logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
 app.use(express_1.default.static(resolvedPublicDir));
+app.get('/assets/:file', (req, res) => {
+    const filePath = path_1.default.join(resolvedPublicDir, 'assets', req.params.file);
+    logger_1.logger.info(`Sirviendo asset: ${filePath}`);
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            logger_1.logger.error(`Error sirviendo asset ${filePath}:`, err);
+            res.status(500).json({ error: 'Asset not found', file: req.params.file, path: filePath });
+        }
+    });
+});
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
         return next();
