@@ -130,10 +130,14 @@ const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
 const publicDirAlt = path_1.default.join(process.cwd(), 'frontend/dist');
 const resolvedPublicDir = fs_1.default.existsSync(publicDirAlt) ? publicDirAlt : publicDir;
 logger_1.logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
+logger_1.logger.info(`Archivos en publicDir: ${fs_1.default.existsSync(resolvedPublicDir) ? 'EXISTE' : 'NO EXISTE'}`);
+if (fs_1.default.existsSync(resolvedPublicDir)) {
+    logger_1.logger.info(`Contenido: ${fs_1.default.readdirSync(resolvedPublicDir).join(', ')}`);
+}
 app.use(express_1.default.static(resolvedPublicDir));
 app.get('/assets/:file', (req, res) => {
     const filePath = path_1.default.join(resolvedPublicDir, 'assets', req.params.file);
-    logger_1.logger.info(`Sirviendo asset: ${filePath}`);
+    logger_1.logger.info(`Sirviendo asset: ${filePath}, existe: ${fs_1.default.existsSync(filePath)}`);
     res.sendFile(filePath, (err) => {
         if (err) {
             logger_1.logger.error(`Error sirviendo asset ${filePath}:`, err);
