@@ -137,30 +137,6 @@ const publicDir = path.join(__dirname, '../../frontend/dist');
 
 logger.info(`Sirviendo frontend desde: ${publicDir}`);
 
-app.get('/assets/:file', (req, res) => {
-  const filePath = path.join(publicDir, 'assets', req.params.file);
-  logger.info(`Sirviendo asset: ${filePath}`);
-  
-  if (!fs.existsSync(filePath)) {
-    logger.error(`Asset no encontrado: ${filePath}`);
-    return res.status(404).json({ error: 'Asset not found', file: req.params.file });
-  }
-  
-  try {
-    const content = fs.readFileSync(filePath);
-    const ext = path.extname(filePath);
-    const contentType = ext === '.js' ? 'application/javascript; charset=utf-8' : 
-                       ext === '.css' ? 'text/css; charset=utf-8' : 
-                       ext === '.html' ? 'text/html; charset=utf-8' : 'application/octet-stream';
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.send(content);
-  } catch (err) {
-    logger.error(`Error leyendo asset:`, err);
-    res.status(500).json({ error: 'Error reading asset', file: req.params.file });
-  }
-});
-
 app.use(express.static(publicDir));
 
 app.get('*', (req, res, next) => {
