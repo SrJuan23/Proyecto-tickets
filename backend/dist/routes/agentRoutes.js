@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const agentController_1 = require("../controllers/agentController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get('/', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE', 'CONSULTA'), agentController_1.getAgents);
+router.post('/', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE'), agentController_1.createAgent);
+router.put('/:id', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE'), agentController_1.updateAgent);
+router.patch('/:id/toggle-status', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE'), agentController_1.toggleAgentStatus);
+exports.default = router;

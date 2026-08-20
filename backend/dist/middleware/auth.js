@@ -1,0 +1,52 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authenticateToken = authenticateToken;
+exports.requireRole = requireRole;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET no está definido en el archivo .env. El servidor no puede iniciar sin esta variable.');
+}
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    if (!token) {
+        res.status(401).json({
+            success: false,
+            message: 'Acceso no autorizado. Token no proporcionado.'
+        });
+        return;
+    }
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    }
+    catch (err) {
+        res.status(403).json({
+            success: false,
+            message: 'Token inválido o expirado.'
+        });
+        return;
+    }
+}
+function requireRole(...roles) {
+    return (req, res, next) => {
+        if (!req.user) {
+            res.status(401).json({ success: false, message: 'Usuario no autenticado.' });
+            return;
+        }
+        if (!roles.includes(req.user.rol)) {
+            res.status(403).json({
+                success: false,
+                message: `Permisos insuficientes. Se requiere uno de los siguientes roles: ${roles.join(', ')}`
+            });
+            return;
+        }
+        next();
+    };
+}

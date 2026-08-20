@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const platformController_1 = require("../controllers/platformController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get('/', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE', 'CONSULTA'), platformController_1.getPlatforms);
+router.post('/', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE'), platformController_1.createPlatform);
+router.put('/:id', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE'), platformController_1.updatePlatform);
+router.patch('/:id/toggle-status', auth_1.authenticateToken, (0, auth_1.requireRole)('ADMIN', 'AGENTE'), platformController_1.togglePlatformStatus);
+exports.default = router;
