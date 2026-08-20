@@ -134,14 +134,11 @@ app.use('/api/config', configRoutes);
 app.use('/api/usuarios', userRoutes);
 
 const publicDir = path.join(__dirname, '../../frontend/dist');
-const publicDirAlt = path.join(process.cwd(), 'frontend/dist');
-const resolvedPublicDir = fs.existsSync(publicDirAlt) ? publicDirAlt : (fs.existsSync(publicDir) ? publicDir : process.cwd());
 
-logger.info(`Sirviendo frontend desde: ${resolvedPublicDir}`);
-logger.info(`CWD: ${process.cwd()}`);
+logger.info(`Sirviendo frontend desde: ${publicDir}`);
 
 app.get('/assets/:file', (req, res) => {
-  const filePath = path.join(resolvedPublicDir, 'assets', req.params.file);
+  const filePath = path.join(publicDir, 'assets', req.params.file);
   logger.info(`Sirviendo asset: ${filePath}`);
   
   if (!fs.existsSync(filePath)) {
@@ -164,13 +161,13 @@ app.get('/assets/:file', (req, res) => {
   }
 });
 
-app.use(express.static(resolvedPublicDir));
+app.use(express.static(publicDir));
 
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
   }
-  const indexPath = path.join(resolvedPublicDir, 'index.html');
+  const indexPath = path.join(publicDir, 'index.html');
   logger.info(`Sirviendo index.html desde: ${indexPath}, existe: ${fs.existsSync(indexPath)}`);
   res.sendFile(indexPath, (err) => {
     if (err) {
