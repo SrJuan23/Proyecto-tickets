@@ -128,28 +128,6 @@ app.use('/api/config', configRoutes_1.default);
 app.use('/api/usuarios', userRoutes_1.default);
 const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
 logger_1.logger.info(`Sirviendo frontend desde: ${publicDir}`);
-app.get('/assets/:file', (req, res) => {
-    const filePath = path_1.default.join(publicDir, 'assets', req.params.file);
-    logger_1.logger.info(`Sirviendo asset: ${filePath}`);
-    if (!fs_1.default.existsSync(filePath)) {
-        logger_1.logger.error(`Asset no encontrado: ${filePath}`);
-        return res.status(404).json({ error: 'Asset not found', file: req.params.file });
-    }
-    try {
-        const content = fs_1.default.readFileSync(filePath);
-        const ext = path_1.default.extname(filePath);
-        const contentType = ext === '.js' ? 'application/javascript; charset=utf-8' :
-            ext === '.css' ? 'text/css; charset=utf-8' :
-                ext === '.html' ? 'text/html; charset=utf-8' : 'application/octet-stream';
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.send(content);
-    }
-    catch (err) {
-        logger_1.logger.error(`Error leyendo asset:`, err);
-        res.status(500).json({ error: 'Error reading asset', file: req.params.file });
-    }
-});
 app.use(express_1.default.static(publicDir));
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {

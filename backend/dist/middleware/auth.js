@@ -6,9 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateToken = authenticateToken;
 exports.requireRole = requireRole;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || null;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET no está definido en el archivo .env. El servidor no puede iniciar sin esta variable.');
+    // No lanzar excepción en import time; emitir warning y manejar en runtime.
+    console.warn('JWT_SECRET no está definido en el archivo .env. Operaciones que requieran JWT fallarán.');
 }
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 function authenticateToken(req, res, next) {
@@ -22,6 +23,10 @@ function authenticateToken(req, res, next) {
         return;
     }
     try {
+        if (!JWT_SECRET) {
+            res.status(500).json({ success: false, message: 'JWT_SECRET no configurado en el servidor.' });
+            return;
+        }
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
         req.user = decoded;
         next();

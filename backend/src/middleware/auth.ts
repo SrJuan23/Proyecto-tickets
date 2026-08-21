@@ -13,10 +13,11 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthUser;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || null;
 
 if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET no está definido en el archivo .env. El servidor no puede iniciar sin esta variable.');
+  // No lanzar excepción en import time; emitir warning y manejar en runtime.
+  console.warn('JWT_SECRET no está definido en el archivo .env. Operaciones que requieran JWT fallarán.');
 }
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -34,7 +35,11 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET!) as AuthUser;
+    if (!JWT_SECRET) {
+      res.status(500).json({ success: false, message: 'JWT_SECRET no configurado en el servidor.' });
+      return;
+    }
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
     req.user = decoded;
     next();
   } catch (err) {
