@@ -42,31 +42,34 @@ async function getKPIs(req, res) {
 async function getCharts(req, res) {
     try {
         const { periodo = '30d', fecha_desde, fecha_hasta } = req.query;
+        const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
         const conditions = ['1=1'];
         const params = [];
+        const dateField = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : "DATE(t.fecha_creacion)";
+        const monthField = isPostgres ? "TO_CHAR(t.fecha_creacion, 'YYYY-MM')" : "strftime('%Y-%m', t.fecha_creacion)";
         // Filtros de fecha según período
         if (periodo === 'hoy') {
-            conditions.push("DATE(t.fecha_creacion) = DATE('now')");
+            conditions.push(isPostgres ? `${dateField} = CURRENT_DATE` : `${dateField} = DATE('now')`);
         }
         else if (periodo === '7d') {
-            conditions.push("DATE(t.fecha_creacion) >= DATE('now', '-7 days')");
+            conditions.push(isPostgres ? `${dateField} >= CURRENT_DATE - INTERVAL '7 days'` : `${dateField} >= DATE('now', '-7 days')`);
         }
         else if (periodo === '30d') {
-            conditions.push("DATE(t.fecha_creacion) >= DATE('now', '-30 days')");
+            conditions.push(isPostgres ? `${dateField} >= CURRENT_DATE - INTERVAL '30 days'` : `${dateField} >= DATE('now', '-30 days')`);
         }
         else if (periodo === 'este_mes') {
-            conditions.push("strftime('%Y-%m', t.fecha_creacion) = strftime('%Y-%m', 'now')");
+            conditions.push(isPostgres ? `${monthField} = TO_CHAR(CURRENT_DATE, 'YYYY-MM')` : `${monthField} = strftime('%Y-%m', 'now')`);
         }
         else if (periodo === 'mes_anterior') {
-            conditions.push("strftime('%Y-%m', t.fecha_creacion) = strftime('%Y-%m', 'now', '-1 month')");
+            conditions.push(isPostgres ? `${monthField} = TO_CHAR(CURRENT_DATE - INTERVAL '1 month', 'YYYY-MM')` : `${monthField} = strftime('%Y-%m', 'now', '-1 month')`);
         }
         else if (periodo === 'rango') {
             if (fecha_desde) {
-                conditions.push('DATE(t.fecha_creacion) >= DATE(?)');
+                conditions.push(`${dateField} >= DATE(?)`);
                 params.push(String(fecha_desde).trim());
             }
             if (fecha_hasta) {
-                conditions.push('DATE(t.fecha_creacion) <= DATE(?)');
+                conditions.push(`${dateField} <= DATE(?)`);
                 params.push(String(fecha_hasta).trim());
             }
         }
@@ -117,14 +120,15 @@ async function getCharts(req, res) {
     `;
         const byClient = await db_1.db.query(clientSql, params);
         // 6. Tendencia temporal (por día)
+        const trendGroup = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
         const trendSql = `
       SELECT 
-        DATE(t.fecha_creacion) as fecha,
+        ${trendGroup} as fecha,
         COUNT(t.id) as total,
         SUM(CASE WHEN t.estado = 'CERRADO' OR t.estado = 'RESUELTO' THEN 1 ELSE 0 END) as cerrados
       FROM tickets t
       WHERE ${whereClause}
-      GROUP BY DATE(t.fecha_creacion)
+      GROUP BY ${trendGroup}
       ORDER BY fecha ASC
     `;
         const trend = await db_1.db.query(trendSql, params);
