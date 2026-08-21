@@ -41,6 +41,9 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
       limit = 25
     } = req.query;
 
+    const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
+    const dateExpr = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
+
     const conditions: string[] = ['1=1'];
     const params: any[] = [];
 
@@ -92,12 +95,12 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
     }
 
     if (fecha_desde && typeof fecha_desde === 'string' && fecha_desde.trim() !== '') {
-      conditions.push('DATE(t.fecha_creacion) >= DATE(?)');
+      conditions.push(`${dateExpr} >= DATE(?)`);
       params.push(fecha_desde.trim());
     }
 
     if (fecha_hasta && typeof fecha_hasta === 'string' && fecha_hasta.trim() !== '') {
-      conditions.push('DATE(t.fecha_creacion) <= DATE(?)');
+      conditions.push(`${dateExpr} <= DATE(?)`);
       params.push(fecha_hasta.trim());
     }
 

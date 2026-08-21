@@ -31,6 +31,8 @@ function calculateMinutesDiff(startStr, endStr) {
 async function getTickets(req, res) {
     try {
         const { search, prioridad, cliente_id, plataforma_id, agente_id, turno, estado, fecha_desde, fecha_hasta, sort_by = 't.id', sort_direction = 'DESC', page = 1, limit = 25 } = req.query;
+        const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
+        const dateExpr = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
         const conditions = ['1=1'];
         const params = [];
         // Búsqueda global
@@ -74,11 +76,11 @@ async function getTickets(req, res) {
             params.push(estado.trim());
         }
         if (fecha_desde && typeof fecha_desde === 'string' && fecha_desde.trim() !== '') {
-            conditions.push('DATE(t.fecha_creacion) >= DATE(?)');
+            conditions.push(`${dateExpr} >= DATE(?)`);
             params.push(fecha_desde.trim());
         }
         if (fecha_hasta && typeof fecha_hasta === 'string' && fecha_hasta.trim() !== '') {
-            conditions.push('DATE(t.fecha_creacion) <= DATE(?)');
+            conditions.push(`${dateExpr} <= DATE(?)`);
             params.push(fecha_hasta.trim());
         }
         const whereClause = conditions.join(' AND ');
