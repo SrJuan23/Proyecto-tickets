@@ -33,16 +33,17 @@ export class Sidebar {
     const navItems = [
       { id: 'dashboard', label: 'Dashboard', icon: this.getDashboardIcon() },
       { id: 'tickets', label: 'Casos', icon: this.getTicketsIcon() },
-      { id: 'clients', label: 'Clientes', icon: this.getClientsIcon(), adminOnly: true },
-      { id: 'platforms', label: 'Plataformas', icon: this.getPlatformsIcon(), adminOnly: true },
-      { id: 'agents', label: 'Agentes', icon: this.getAgentsIcon(), adminOnly: true },
-      { id: 'reports', label: 'Reportes', icon: this.getReportsIcon(), adminOrConsulta: true },
+      { id: 'clients', label: 'Clientes', icon: this.getClientsIcon(), adminOrAgent: true },
+      { id: 'platforms', label: 'Plataformas', icon: this.getPlatformsIcon(), adminOrAgent: true },
+      { id: 'agents', label: 'Agentes', icon: this.getAgentsIcon(), adminOrAgent: true },
+      { id: 'reports', label: 'Reportes', icon: this.getReportsIcon(), adminOrAgentOrConsulta: true },
       { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon(), adminOnly: true }
     ];
 
     const allowedItems = navItems.filter((item) => {
       if (item.adminOnly) return isAdmin;
-      if (item.adminOrConsulta) return isAdmin || isConsulta;
+      if (item.adminOrAgent) return isAdmin || isAgent;
+      if (item.adminOrAgentOrConsulta) return isAdmin || isAgent || isConsulta;
       return true;
     });
 

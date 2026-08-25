@@ -15,7 +15,7 @@ export class ClientsView {
   }
 
   public async render(): Promise<void> {
-    const canManage = api.hasRole('ADMIN', 'AGENTE');
+    const canManage = api.hasRole('ADMIN');
 
     this.container.innerHTML = `
       <div class="space-y-5 animate-fade-in pb-12">
@@ -115,7 +115,7 @@ export class ClientsView {
       return;
     }
 
-    const canManage = api.hasRole('ADMIN', 'AGENTE');
+    const canManage = api.hasRole('ADMIN');
 
     grid.innerHTML = this.clients
       .map(

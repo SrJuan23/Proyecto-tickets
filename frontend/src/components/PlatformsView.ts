@@ -14,7 +14,7 @@ export class PlatformsView {
   }
 
   public async render(): Promise<void> {
-    const canManage = api.hasRole('ADMIN', 'AGENTE');
+    const canManage = api.hasRole('ADMIN');
 
     this.container.innerHTML = `
       <div class="space-y-5 animate-fade-in pb-12">
@@ -101,7 +101,7 @@ export class PlatformsView {
       return;
     }
 
-    const canManage = api.hasRole('ADMIN', 'AGENTE');
+    const canManage = api.hasRole('ADMIN');
 
     grid.innerHTML = this.platforms
       .map(
