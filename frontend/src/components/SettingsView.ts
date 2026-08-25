@@ -123,7 +123,7 @@ export class SettingsView {
       <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-montserrat font-bold ${u.rol === 'ADMIN' ? 'bg-indigo-100 text-brand-primary' : u.rol === 'AGENTE' ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${u.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${u.estado}</span></td>
     `, 'user');
-    this.bindTableActions(container as HTMLElement, 'user', api.toggleUserStatus, api.deleteUser);
+    this.bindTableActions(container as HTMLElement, 'user', api, 'toggleUserStatus', 'deleteUser');
   }
 
   private renderAgentsTable(): void {
@@ -140,7 +140,7 @@ export class SettingsView {
       <td class="py-3 px-4 text-slate-600">${a.especialidad || '-'}</td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${a.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${a.estado}</span></td>
     `, 'agent');
-    this.bindTableActions(container as HTMLElement, 'agent', api.toggleAgentStatus, api.deleteAgent);
+    this.bindTableActions(container as HTMLElement, 'agent', api, 'toggleAgentStatus', 'deleteAgent');
   }
 
   private renderClientsTable(): void {
@@ -157,7 +157,7 @@ export class SettingsView {
       <td class="py-3 px-4 text-slate-600">${c.contacto_principal || '-'}</td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${c.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${c.estado}</span></td>
     `, 'client');
-    this.bindTableActions(container as HTMLElement, 'client', api.toggleClientStatus, api.deleteClient);
+    this.bindTableActions(container as HTMLElement, 'client', api, 'toggleClientStatus', 'deleteClient');
   }
 
   private renderPlatformsTable(): void {
@@ -174,7 +174,7 @@ export class SettingsView {
       <td class="py-3 px-4 text-slate-600">${p.total_casos || 0}</td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${p.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${p.estado}</span></td>
     `, 'platform');
-    this.bindTableActions(container as HTMLElement, 'platform', api.togglePlatformStatus, api.deletePlatform);
+    this.bindTableActions(container as HTMLElement, 'platform', api, 'togglePlatformStatus', 'deletePlatform');
   }
 
   private buildTable(headers: { key: string; label: string }[], items: any[], rowHtml: (item: any) => string, type: string): string {
@@ -217,13 +217,13 @@ export class SettingsView {
     });
   }
 
-  private bindTableActions(container: HTMLElement, type: string, toggleFn: (id: number) => Promise<any>, deleteFn: (id: number) => Promise<any>): void {
+  private bindTableActions(container: HTMLElement, type: string, apiInstance: any, toggleName: string, deleteName: string): void {
     container.querySelectorAll(`[data-toggle-${type}]`).forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = Number(btn.getAttribute(`data-toggle-${type}`));
         if (!confirm('¿Cambiar estado?')) return;
         try {
-          const res = await toggleFn(id);
+          const res = await apiInstance[toggleName](id);
           toast.success(res.message || 'Estado actualizado.');
           await this.fetchTabData();
         } catch (e: any) {
@@ -237,7 +237,7 @@ export class SettingsView {
         const id = Number(btn.getAttribute(`data-delete-${type}`));
         if (!confirm(`¿Eliminar ID ${id}?`)) return;
         try {
-          await deleteFn(id);
+          await apiInstance[deleteName](id);
           toast.success('Eliminado correctamente.');
           await this.fetchTabData();
         } catch (e: any) {
