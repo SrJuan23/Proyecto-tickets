@@ -75,6 +75,8 @@ class DatabaseService {
         password_hash VARCHAR(255) NOT NULL,
         rol VARCHAR(50) NOT NULL DEFAULT 'AGENTE',
         estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        telefono VARCHAR(50) NULL,
+        especialidad VARCHAR(100) NULL,
         avatar_url VARCHAR(255) NULL,
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -168,6 +170,8 @@ class DatabaseService {
         password_hash VARCHAR(255) NOT NULL,
         rol VARCHAR(50) NOT NULL DEFAULT 'AGENTE',
         estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        telefono VARCHAR(50) NULL,
+        especialidad VARCHAR(100) NULL,
         avatar_url VARCHAR(255) NULL,
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -254,6 +258,23 @@ class DatabaseService {
 
     this.sqliteDb.exec(schemaSql);
     this.migrateTicketsAgenteNullable();
+    this.migrateUsuariosTelefonoEspecialidad();
+  }
+
+  private migrateUsuariosTelefonoEspecialidad(): void {
+    try {
+      const cols = this.sqliteDb.pragma(`table_info(usuarios)`);
+      const colNames = (cols as any[]).map((c) => c.name);
+
+      if (!colNames.includes('telefono')) {
+        this.sqliteDb.exec(`ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(50) NULL;`);
+      }
+      if (!colNames.includes('especialidad')) {
+        this.sqliteDb.exec(`ALTER TABLE usuarios ADD COLUMN especialidad VARCHAR(100) NULL;`);
+      }
+    } catch (err) {
+      console.error('[DB] Error en migracion de telefono/especialidad en usuarios:', err);
+    }
   }
 
   private migrateTicketsAgenteNullable(): void {

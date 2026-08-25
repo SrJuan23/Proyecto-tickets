@@ -62,7 +62,7 @@ async function updateConfig(req, res) {
 // ---------------- USER MANAGEMENT CONTROLLER (ADMIN) ----------------
 async function getUsers(req, res) {
     try {
-        const users = await db_1.db.query('SELECT id, nombre, email, rol, estado, avatar_url, fecha_creacion FROM usuarios ORDER BY nombre ASC');
+        const users = await db_1.db.query('SELECT id, nombre, email, rol, estado, telefono, especialidad, avatar_url, fecha_creacion FROM usuarios ORDER BY nombre ASC');
         res.json({
             success: true,
             data: users
@@ -101,11 +101,16 @@ async function createUser(req, res) {
 async function updateUser(req, res) {
     try {
         const { id } = req.params;
-        const { nombre, email, password, rol, estado } = req.body;
+        const { nombre, email, password, rol, estado, telefono, especialidad } = req.body;
         const existing = await db_1.db.get('SELECT * FROM usuarios WHERE id = ?', [id]);
         if (!existing) {
             res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
             return;
+        }
+        // Si edita su propio perfil, no permitir cambiar el rol
+        let finalRol = rol;
+        if (req.user?.id === Number(id)) {
+            finalRol = existing.rol;
         }
         let passHash = existing.password_hash;
         if (password && password.trim()) {
@@ -116,13 +121,17 @@ async function updateUser(req, res) {
         email = ?,
         password_hash = ?,
         rol = ?,
-        estado = ?
+        estado = ?,
+        telefono = ?,
+        especialidad = ?
        WHERE id = ?`, [
             nombre !== undefined ? nombre.trim() : existing.nombre,
             email !== undefined ? email.trim().toLowerCase() : existing.email,
             passHash,
-            rol !== undefined ? rol : existing.rol,
+            finalRol !== undefined ? finalRol : existing.rol,
             estado !== undefined ? estado : existing.estado,
+            telefono !== undefined ? telefono : existing.telefono,
+            especialidad !== undefined ? especialidad : existing.especialidad,
             id
         ]);
         res.json({

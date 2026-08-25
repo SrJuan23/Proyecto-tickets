@@ -67,7 +67,7 @@ export async function updateConfig(req: AuthenticatedRequest, res: Response): Pr
 export async function getUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const users = await db.query(
-      'SELECT id, nombre, email, rol, estado, avatar_url, fecha_creacion FROM usuarios ORDER BY nombre ASC'
+      'SELECT id, nombre, email, rol, estado, telefono, especialidad, avatar_url, fecha_creacion FROM usuarios ORDER BY nombre ASC'
     );
     res.json({
       success: true,
@@ -114,12 +114,18 @@ export async function createUser(req: AuthenticatedRequest, res: Response): Prom
 export async function updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const { nombre, email, password, rol, estado } = req.body;
+    const { nombre, email, password, rol, estado, telefono, especialidad } = req.body;
 
     const existing = await db.get('SELECT * FROM usuarios WHERE id = ?', [id]);
     if (!existing) {
       res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
       return;
+    }
+
+    // Si edita su propio perfil, no permitir cambiar el rol
+    let finalRol = rol;
+    if (req.user?.id === Number(id)) {
+      finalRol = existing.rol;
     }
 
     let passHash = existing.password_hash;
@@ -133,14 +139,18 @@ export async function updateUser(req: AuthenticatedRequest, res: Response): Prom
         email = ?,
         password_hash = ?,
         rol = ?,
-        estado = ?
+        estado = ?,
+        telefono = ?,
+        especialidad = ?
        WHERE id = ?`,
       [
         nombre !== undefined ? nombre.trim() : existing.nombre,
         email !== undefined ? email.trim().toLowerCase() : existing.email,
         passHash,
-        rol !== undefined ? rol : existing.rol,
+        finalRol !== undefined ? finalRol : existing.rol,
         estado !== undefined ? estado : existing.estado,
+        telefono !== undefined ? telefono : existing.telefono,
+        especialidad !== undefined ? especialidad : existing.especialidad,
         id
       ]
     );

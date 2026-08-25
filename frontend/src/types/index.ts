@@ -10,6 +10,8 @@ export interface User {
   email: string;
   rol: RolUsuario;
   estado: EstadoEntidad;
+  telefono?: string;
+  especialidad?: string;
   avatar_url?: string;
   fecha_creacion: string;
 }

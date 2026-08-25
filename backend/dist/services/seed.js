@@ -22,15 +22,15 @@ async function seedDatabase() {
     const adminPass = await bcryptjs_1.default.hash('admin123', 10);
     const agentePass = await bcryptjs_1.default.hash('agente123', 10);
     const consultaPass = await bcryptjs_1.default.hash('consulta123', 10);
-    await db_1.db.run(`INSERT INTO usuarios (nombre, email, password_hash, rol, estado) VALUES 
-      (?, ?, ?, ?, ?),
-      (?, ?, ?, ?, ?),
-      (?, ?, ?, ?, ?),
-      (?, ?, ?, ?, ?)`, [
-        'Administrador del Sistema', 'admin@supportdesk.com', adminPass, 'ADMIN', 'ACTIVO',
-        'Didier Santamaría', 'didier.santamaria@supportdesk.com', agentePass, 'AGENTE', 'ACTIVO',
-        'Bryan Steven Sanchez', 'bryan.sanchez@supportdesk.com', agentePass, 'AGENTE', 'ACTIVO',
-        'Auditor Consulta', 'consulta@supportdesk.com', consultaPass, 'CONSULTA', 'ACTIVO'
+    await db_1.db.run(`INSERT INTO usuarios (nombre, email, password_hash, rol, estado, telefono, especialidad) VALUES 
+      (?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?),
+      (?, ?, ?, ?, ?, ?, ?)`, [
+        'Administrador del Sistema', 'admin@supportdesk.com', adminPass, 'ADMIN', 'ACTIVO', '+57 300 0000001', 'Administración General',
+        'Didier Santamaría', 'didier.santamaria@supportdesk.com', agentePass, 'AGENTE', 'ACTIVO', '+57 311 2001122', 'Ciberseguridad FortiEDR / FortiMail',
+        'Bryan Steven Sanchez', 'bryan.sanchez@supportdesk.com', agentePass, 'AGENTE', 'ACTIVO', '+57 312 3002233', 'Redes & Enlaces FlexWAN',
+        'Auditor Consulta', 'consulta@supportdesk.com', consultaPass, 'CONSULTA', 'ACTIVO', '+57 300 0000002', 'Auditoría y Consultoría'
     ]);
     // 2. Clientes
     await db_1.db.run(`INSERT INTO clientes (nombre, nit, contacto_principal, correo_contacto, telefono, estado) VALUES
