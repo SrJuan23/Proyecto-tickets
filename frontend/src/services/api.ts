@@ -185,6 +185,12 @@ class ApiService {
     });
   }
 
+  async deleteClient(id: number | string) {
+    return this.request(`/clientes/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
   // --- PLATAFORMAS ---
   async getPlatforms(search?: string, estado?: string) {
     const params = new URLSearchParams();
@@ -213,6 +219,12 @@ class ApiService {
     });
   }
 
+  async deletePlatform(id: number | string) {
+    return this.request(`/plataformas/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
   // --- AGENTES ---
   async getAgents(search?: string, estado?: string) {
     const params = new URLSearchParams();
@@ -238,6 +250,12 @@ class ApiService {
   async toggleAgentStatus(id: number | string) {
     return this.request(`/agentes/${id}/toggle-status`, {
       method: 'PATCH'
+    });
+  }
+
+  async deleteAgent(id: number | string) {
+    return this.request(`/agentes/${id}`, {
+      method: 'DELETE'
     });
   }
 

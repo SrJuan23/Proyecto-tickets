@@ -19,9 +19,9 @@ export class TicketModal {
   }) {
     this.ticket = options.ticket || null;
     this.isEdit = !!options.ticket;
-    this.clients = options.clients;
-    this.platforms = options.platforms;
-    this.agents = options.agents;
+    this.clients = options.clients.filter((c) => c.estado === 'ACTIVO');
+    this.platforms = options.platforms.filter((p) => p.estado === 'ACTIVO');
+    this.agents = options.agents.filter((a) => a.estado === 'ACTIVO');
     this.onSuccess = options.onSuccess;
   }
 

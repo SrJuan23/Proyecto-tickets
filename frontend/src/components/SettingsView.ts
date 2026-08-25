@@ -1,10 +1,16 @@
 import { api } from '../services/api';
 import { toast } from '../services/toast';
-import { User } from '../types';
+import { User, Agent, Client, Platform } from '../types';
+
+type EntityTab = 'users' | 'agents' | 'clients' | 'platforms';
 
 export class SettingsView {
   private container: HTMLElement;
+  private activeTab: EntityTab = 'users';
   private users: User[] = [];
+  private agents: Agent[] = [];
+  private clients: Client[] = [];
+  private platforms: Platform[] = [];
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -15,35 +21,33 @@ export class SettingsView {
 
     this.container.innerHTML = `
       <div class="space-y-6 animate-fade-in pb-12">
-        <!-- Header -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card">
           <h1 class="text-2xl font-montserrat font-bold text-brand-dark tracking-tight">Configuración del Sistema</h1>
-          <p class="text-xs font-lato text-slate-500 mt-1">Administración de usuarios y roles del sistema</p>
+          <p class="text-xs font-lato text-slate-500 mt-1">Panel de administración general</p>
         </div>
 
-        <!-- Section: User Management (Admin Only) -->
         ${isAdmin ? `
-        <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-card space-y-4">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-xl bg-brand-primary-light text-brand-primary font-montserrat font-bold flex items-center justify-center text-xs">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-              </span>
-              <h3 class="text-sm font-montserrat font-bold text-slate-800">Administración de Usuarios y Roles</h3>
-            </div>
-
-            <button id="new-user-btn" class="px-3.5 py-1.5 bg-brand-dark hover:bg-brand-dark-hover text-white text-xs font-montserrat font-semibold rounded-xl transition-colors">
-              Nuevo Usuario
-            </button>
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-card overflow-hidden">
+          <div class="flex border-b border-slate-200/80">
+            <button data-tab="users" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'users' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Usuarios</button>
+            <button data-tab="agents" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'agents' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Agentes</button>
+            <button data-tab="clients" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'clients' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Clientes</button>
+            <button data-tab="platforms" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'platforms' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Plataformas</button>
           </div>
 
-          <div class="overflow-x-auto" id="users-table-container">
-            <div class="p-6 text-center text-slate-400 text-xs">Cargando usuarios...</div>
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-montserrat font-bold text-slate-800">${this.getTabTitle()}</h3>
+              <button id="new-entity-btn" class="px-3.5 py-1.5 bg-brand-dark hover:bg-brand-dark-hover text-white text-xs font-montserrat font-semibold rounded-xl transition-colors">Nuevo</button>
+            </div>
+
+            <div class="overflow-x-auto" id="entity-table-container">
+              <div class="p-6 text-center text-slate-400 text-xs">Cargando...</div>
+            </div>
           </div>
         </div>
         ` : ''}
 
-        <!-- Section: Roles Guide -->
         <div class="bg-gradient-to-r from-brand-dark to-[#131c44] text-white p-6 rounded-3xl shadow-xl space-y-4">
           <h3 class="font-montserrat font-bold text-sm tracking-tight text-brand-cyan">Matriz de Roles y Permisos</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-lato text-slate-300">
@@ -64,18 +68,37 @@ export class SettingsView {
       </div>
     `;
 
-    await this.fetchData();
     this.bindEvents();
+    await this.fetchTabData();
   }
 
-  private async fetchData(): Promise<void> {
+  private getTabTitle(): string {
+    switch (this.activeTab) {
+      case 'users': return 'Usuarios del Sistema';
+      case 'agents': return 'Agentes de Soporte';
+      case 'clients': return 'Clientes / Empresas';
+      case 'platforms': return 'Plataformas Tecnológicas';
+    }
+  }
+
+  private async fetchTabData(): Promise<void> {
     try {
-      if (api.hasRole('ADMIN')) {
-        const uRes = await api.getUsers();
-        if (uRes.data) {
-          this.users = uRes.data;
-          this.renderUsersTable();
-        }
+      if (this.activeTab === 'users') {
+        const res = await api.getUsers();
+        this.users = res.data || [];
+        this.renderUsersTable();
+      } else if (this.activeTab === 'agents') {
+        const res = await api.getAgents();
+        this.agents = res.data || [];
+        this.renderAgentsTable();
+      } else if (this.activeTab === 'clients') {
+        const res = await api.getClients();
+        this.clients = res.data || [];
+        this.renderClientsTable();
+      } else if (this.activeTab === 'platforms') {
+        const res = await api.getPlatforms();
+        this.platforms = res.data || [];
+        this.renderPlatformsTable();
       }
     } catch (err) {
       console.error(err);
@@ -83,160 +106,251 @@ export class SettingsView {
   }
 
   private renderUsersTable(): void {
-    const container = this.container.querySelector('#users-table-container');
+    const container = this.container.querySelector('#entity-table-container');
     if (!container) return;
+    container.innerHTML = this.buildTable([
+      { key: 'nombre', label: 'Usuario' },
+      { key: 'email', label: 'Correo' },
+      { key: 'rol', label: 'Rol' },
+      { key: 'estado', label: 'Estado' }
+    ], this.users, (u) => `
+      <td class="py-3 px-4 font-montserrat font-bold text-slate-800">${u.nombre}</td>
+      <td class="py-3 px-4 text-slate-600">${u.email}</td>
+      <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-montserrat font-bold ${u.rol === 'ADMIN' ? 'bg-indigo-100 text-brand-primary' : u.rol === 'AGENTE' ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
+      <td class="py-3 px-4"><span class="text-[11px] font-semibold ${u.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${u.estado}</span></td>
+    `, 'user');
+  }
 
-    container.innerHTML = `
+  private renderAgentsTable(): void {
+    const container = this.container.querySelector('#entity-table-container');
+    if (!container) return;
+    container.innerHTML = this.buildTable([
+      { key: 'nombre', label: 'Agente' },
+      { key: 'email', label: 'Correo' },
+      { key: 'especialidad', label: 'Especialidad' },
+      { key: 'estado', label: 'Estado' }
+    ], this.agents, (a) => `
+      <td class="py-3 px-4 font-montserrat font-bold text-slate-800">${a.nombre}</td>
+      <td class="py-3 px-4 text-slate-600">${a.email || '-'}</td>
+      <td class="py-3 px-4 text-slate-600">${a.especialidad || '-'}</td>
+      <td class="py-3 px-4"><span class="text-[11px] font-semibold ${a.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${a.estado}</span></td>
+    `, 'agent');
+  }
+
+  private renderClientsTable(): void {
+    const container = this.container.querySelector('#entity-table-container');
+    if (!container) return;
+    container.innerHTML = this.buildTable([
+      { key: 'nombre', label: 'Cliente' },
+      { key: 'nit', label: 'NIT' },
+      { key: 'contacto_principal', label: 'Contacto' },
+      { key: 'estado', label: 'Estado' }
+    ], this.clients, (c) => `
+      <td class="py-3 px-4 font-montserrat font-bold text-slate-800">${c.nombre}</td>
+      <td class="py-3 px-4 text-slate-600 font-mono">${c.nit || '-'}</td>
+      <td class="py-3 px-4 text-slate-600">${c.contacto_principal || '-'}</td>
+      <td class="py-3 px-4"><span class="text-[11px] font-semibold ${c.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${c.estado}</span></td>
+    `, 'client');
+  }
+
+  private renderPlatformsTable(): void {
+    const container = this.container.querySelector('#entity-table-container');
+    if (!container) return;
+    container.innerHTML = this.buildTable([
+      { key: 'nombre', label: 'Plataforma' },
+      { key: 'descripcion', label: 'Descripción' },
+      { key: 'total_casos', label: 'Casos' },
+      { key: 'estado', label: 'Estado' }
+    ], this.platforms, (p) => `
+      <td class="py-3 px-4 font-montserrat font-bold text-slate-800">${p.nombre}</td>
+      <td class="py-3 px-4 text-slate-600">${p.descripcion || '-'}</td>
+      <td class="py-3 px-4 text-slate-600">${p.total_casos || 0}</td>
+      <td class="py-3 px-4"><span class="text-[11px] font-semibold ${p.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${p.estado}</span></td>
+    `, 'platform');
+  }
+
+  private buildTable(headers: { key: string; label: string }[], items: any[], rowHtml: (item: any) => string, type: string): string {
+    if (items.length === 0) {
+      return `<div class="p-6 text-center text-slate-400 text-xs">No hay registros.</div>`;
+    }
+    return `
       <table class="w-full text-left border-collapse text-xs font-lato">
         <thead>
           <tr class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-montserrat font-bold text-slate-500 uppercase tracking-wider">
-            <th class="py-3 px-4">Usuario</th>
-            <th class="py-3 px-4">Correo</th>
-            <th class="py-3 px-4">Rol</th>
-            <th class="py-3 px-4">Estado</th>
+            ${headers.map(h => `<th class="py-3 px-4">${h.label}</th>`).join('')}
             <th class="py-3 px-4 text-right">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          ${this.users
-            .map(
-              (u) => `
+          ${items.map((item) => `
             <tr class="hover:bg-slate-50 transition-colors">
-              <td class="py-3 px-4 font-montserrat font-bold text-slate-800">${u.nombre}</td>
-              <td class="py-3 px-4 text-slate-600">${u.email}</td>
-              <td class="py-3 px-4">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-montserrat font-bold ${
-                  u.rol === 'ADMIN' ? 'bg-indigo-100 text-brand-primary' : u.rol === 'AGENTE' ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-700'
-                }">
-                  ${u.rol}
-                </span>
-              </td>
-              <td class="py-3 px-4">
-                <span class="text-[11px] font-semibold ${u.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${u.estado}</span>
-              </td>
+              ${rowHtml(item)}
               <td class="py-3 px-4 text-right">
-                <button data-toggle-user="${u.id}" class="text-xs text-amber-600 hover:text-amber-800 font-semibold p-1 mr-2">
-                  ${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}
-                </button>
-                <button data-delete-user="${u.id}" class="text-xs text-rose-600 hover:text-rose-800 font-semibold p-1">
-                  Eliminar
-                </button>
+                <button data-toggle-${type}="${item.id}" class="text-xs text-amber-600 hover:text-amber-800 font-semibold p-1 mr-2">${item.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}</button>
+                <button data-delete-${type}="${item.id}" class="text-xs text-rose-600 hover:text-rose-800 font-semibold p-1">Eliminar</button>
               </td>
             </tr>
-          `
-            )
-            .join('')}
+          `).join('')}
         </tbody>
       </table>
     `;
-
-    container.querySelectorAll('[data-toggle-user]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.getAttribute('data-toggle-user'));
-        if (confirm('¿Cambiar estado de este usuario?')) {
-          try {
-            const res = await api.toggleUserStatus(id);
-            toast.success(res.message || 'Estado del usuario actualizado.');
-            this.fetchData();
-          } catch (e: any) {
-            toast.error(e.message || 'Error al cambiar estado del usuario.');
-          }
-        }
-      });
-    });
-
-    container.querySelectorAll('[data-delete-user]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = Number(btn.getAttribute('data-delete-user'));
-        if (confirm(`¿Eliminar usuario ID ${id}?`)) {
-          try {
-            await api.deleteUser(id);
-            toast.success('Usuario eliminado.');
-            this.fetchData();
-          } catch (e: any) {
-            toast.error(e.message || 'Error al eliminar usuario.');
-          }
-        }
-      });
-    });
   }
 
   private bindEvents(): void {
-    this.container.querySelector('#new-user-btn')?.addEventListener('click', () => {
-      this.openUserModal();
+    this.container.querySelectorAll('.settings-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.activeTab = (btn.getAttribute('data-tab') as EntityTab) || 'users';
+        this.render();
+      });
+    });
+
+    this.container.querySelector('#new-entity-btn')?.addEventListener('click', () => {
+      this.openEntityModal();
+    });
+
+    this.bindEntityActions('user', api.toggleUserStatus, api.deleteUser);
+    this.bindEntityActions('agent', api.toggleAgentStatus, api.deleteAgent);
+    this.bindEntityActions('client', api.toggleClientStatus, api.deleteClient);
+    this.bindEntityActions('platform', api.togglePlatformStatus, api.deletePlatform);
+  }
+
+  private bindEntityActions(type: string, toggleFn: (id: number) => Promise<any>, deleteFn: (id: number) => Promise<any>): void {
+    this.container.querySelectorAll(`[data-toggle-${type}]`).forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.getAttribute(`data-toggle-${type}`));
+        if (!confirm('¿Cambiar estado?')) return;
+        try {
+          const res = await toggleFn(id);
+          toast.success(res.message || 'Estado actualizado.');
+          this.fetchTabData();
+        } catch (e: any) {
+          toast.error(e.message || 'Error al cambiar estado.');
+        }
+      });
+    });
+
+    this.container.querySelectorAll(`[data-delete-${type}]`).forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.getAttribute(`data-delete-${type}`));
+        if (!confirm(`¿Eliminar ID ${id}?`)) return;
+        try {
+          await deleteFn(id);
+          toast.success('Eliminado correctamente.');
+          this.fetchTabData();
+        } catch (e: any) {
+          toast.error(e.message || 'Error al eliminar.');
+        }
+      });
     });
   }
 
-  private openUserModal(): void {
+  private openEntityModal(): void {
     const modalContainer = document.getElementById('modal-container');
     if (!modalContainer) return;
 
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in';
 
+    const title = this.getModalTitle();
+    const formContent = this.getModalFormContent();
+
     modal.innerHTML = `
       <div class="bg-white rounded-3xl max-w-md w-full shadow-modal border border-slate-100 overflow-hidden">
         <div class="px-6 py-4 bg-brand-dark text-white flex items-center justify-between">
-          <h3 class="text-sm font-montserrat font-bold">Crear Usuario del Sistema</h3>
-          <button id="close-u-modal" class="p-1.5 text-slate-400 hover:text-white rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+          <h3 class="text-sm font-montserrat font-bold">${title}</h3>
+          <button id="close-e-modal" class="p-1.5 text-slate-400 hover:text-white rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
         </div>
-
-        <form id="user-form" class="p-6 space-y-4 text-xs font-lato">
-          <div>
-            <label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre Completo *</label>
-            <input type="text" name="nombre" required placeholder="Ej. Didier Santamaría" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" />
-          </div>
-
-          <div>
-            <label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo Electrónico *</label>
-            <input type="email" name="email" required placeholder="usuario@supportdesk.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" />
-          </div>
-
-          <div>
-            <label class="block font-montserrat font-semibold text-slate-700 mb-1">Contraseña Inicial *</label>
-            <input type="password" name="password" required placeholder="••••••••" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" />
-          </div>
-
-          <div>
-            <label class="block font-montserrat font-semibold text-slate-700 mb-1">Rol de Acceso *</label>
-            <select name="rol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none font-semibold">
-              <option value="AGENTE">AGENTE (Gestión de tickets)</option>
-              <option value="ADMIN">ADMIN (Acceso total)</option>
-              <option value="CONSULTA">CONSULTA (Solo lectura y reportes)</option>
-            </select>
-          </div>
-
+        <form id="entity-form" class="p-6 space-y-4 text-xs font-lato">
+          ${formContent}
           <div class="pt-4 flex items-center justify-end gap-2 border-t border-slate-100">
-            <button type="button" id="cancel-u-modal" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-montserrat font-semibold rounded-xl">Cancelar</button>
-            <button type="submit" class="px-5 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white font-montserrat font-bold rounded-xl shadow-brand">Crear Usuario</button>
+            <button type="button" id="cancel-e-modal" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-montserrat font-semibold rounded-xl">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white font-montserrat font-bold rounded-xl shadow-brand">Guardar</button>
           </div>
         </form>
       </div>
     `;
 
     const closeModal = () => modal.remove();
-    modal.querySelector('#close-u-modal')?.addEventListener('click', closeModal);
-    modal.querySelector('#cancel-u-modal')?.addEventListener('click', closeModal);
+    modal.querySelector('#close-e-modal')?.addEventListener('click', closeModal);
+    modal.querySelector('#cancel-e-modal')?.addEventListener('click', closeModal);
 
-    const form = modal.querySelector('#user-form') as HTMLFormElement;
+    const form = modal.querySelector('#entity-form') as HTMLFormElement;
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
       try {
-        await api.createUser({
-          nombre: formData.get('nombre'),
-          email: formData.get('email'),
-          password: formData.get('password'),
-          rol: formData.get('rol')
-        });
-        toast.success('Usuario creado correctamente.');
+        await this.submitEntityForm(formData);
+        toast.success('Guardado correctamente.');
         closeModal();
-        this.fetchData();
+        this.fetchTabData();
       } catch (err: any) {
-        toast.error(err.message || 'Error al crear usuario.');
+        toast.error(err.message || 'Error al guardar.');
       }
     });
 
     modalContainer.appendChild(modal);
+  }
+
+  private getModalTitle(): string {
+    switch (this.activeTab) {
+      case 'users': return 'Crear Usuario del Sistema';
+      case 'agents': return 'Registrar Nuevo Agente';
+      case 'clients': return 'Registrar Nuevo Cliente';
+      case 'platforms': return 'Registrar Nueva Plataforma';
+    }
+  }
+
+  private getModalFormContent(): string {
+    switch (this.activeTab) {
+      case 'users':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre Completo *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo *</label><input type="email" name="email" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contraseña *</label><input type="password" name="password" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Rol *</label><select name="rol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"><option value="AGENTE">AGENTE</option><option value="ADMIN">ADMIN</option><option value="CONSULTA">CONSULTA</option></select></div>
+        `;
+      case 'agents':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo</label><input type="email" name="email" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Especialidad</label><input type="text" name="especialidad" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+        `;
+      case 'clients':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">NIT</label><input type="text" name="nit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contacto</label><input type="text" name="contacto_principal" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo</label><input type="email" name="correo_contacto" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+        `;
+      case 'platforms':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Descripción</label><textarea name="descripcion" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"></textarea></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Color Badge</label><input type="color" name="color_badge" value="#0945F7" class="w-10 h-10 p-0.5 rounded-xl border border-slate-200 cursor-pointer" /></div>
+        `;
+    }
+    return '';
+  }
+
+  private async submitEntityForm(formData: FormData): Promise<void> {
+    const data: any = {};
+    formData.forEach((value, key) => { data[key] = value; });
+
+    switch (this.activeTab) {
+      case 'users':
+        await api.createUser({ nombre: data.nombre, email: data.email, password: data.password, rol: data.rol });
+        break;
+      case 'agents':
+        await api.createAgent({ nombre: data.nombre, email: data.email, telefono: data.telefono, especialidad: data.especialidad });
+        break;
+      case 'clients':
+        await api.createClient({ nombre: data.nombre, nit: data.nit, contacto_principal: data.contacto_principal, correo_contacto: data.correo_contacto, telefono: data.telefono });
+        break;
+      case 'platforms':
+        await api.createPlatform({ nombre: data.nombre, descripcion: data.descripcion, color_badge: data.color_badge });
+        break;
+    }
   }
 }
