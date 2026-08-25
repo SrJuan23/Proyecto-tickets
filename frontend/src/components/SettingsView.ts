@@ -68,7 +68,7 @@ export class SettingsView {
       </div>
     `;
 
-    this.bindEvents();
+    this.bindGlobalEvents();
     await this.fetchTabData();
   }
 
@@ -100,8 +100,12 @@ export class SettingsView {
         this.platforms = res.data || [];
         this.renderPlatformsTable();
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('SettingsView fetchTabData error', err);
+      const container = this.container.querySelector('#entity-table-container');
+      if (container) {
+        container.innerHTML = `<div class="p-6 text-center text-rose-500 text-xs">Error al cargar datos: ${err.message}</div>`;
+      }
     }
   }
 
@@ -119,6 +123,7 @@ export class SettingsView {
       <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-montserrat font-bold ${u.rol === 'ADMIN' ? 'bg-indigo-100 text-brand-primary' : u.rol === 'AGENTE' ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-700'}">${u.rol}</span></td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${u.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${u.estado}</span></td>
     `, 'user');
+    this.bindTableActions(container as HTMLElement, 'user', api.toggleUserStatus, api.deleteUser);
   }
 
   private renderAgentsTable(): void {
@@ -135,6 +140,7 @@ export class SettingsView {
       <td class="py-3 px-4 text-slate-600">${a.especialidad || '-'}</td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${a.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${a.estado}</span></td>
     `, 'agent');
+    this.bindTableActions(container as HTMLElement, 'agent', api.toggleAgentStatus, api.deleteAgent);
   }
 
   private renderClientsTable(): void {
@@ -151,6 +157,7 @@ export class SettingsView {
       <td class="py-3 px-4 text-slate-600">${c.contacto_principal || '-'}</td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${c.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${c.estado}</span></td>
     `, 'client');
+    this.bindTableActions(container as HTMLElement, 'client', api.toggleClientStatus, api.deleteClient);
   }
 
   private renderPlatformsTable(): void {
@@ -167,6 +174,7 @@ export class SettingsView {
       <td class="py-3 px-4 text-slate-600">${p.total_casos || 0}</td>
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${p.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${p.estado}</span></td>
     `, 'platform');
+    this.bindTableActions(container as HTMLElement, 'platform', api.togglePlatformStatus, api.deletePlatform);
   }
 
   private buildTable(headers: { key: string; label: string }[], items: any[], rowHtml: (item: any) => string, type: string): string {
@@ -196,7 +204,7 @@ export class SettingsView {
     `;
   }
 
-  private bindEvents(): void {
+  private bindGlobalEvents(): void {
     this.container.querySelectorAll('.settings-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
         this.activeTab = (btn.getAttribute('data-tab') as EntityTab) || 'users';
@@ -207,36 +215,31 @@ export class SettingsView {
     this.container.querySelector('#new-entity-btn')?.addEventListener('click', () => {
       this.openEntityModal();
     });
-
-    this.bindEntityActions('user', api.toggleUserStatus, api.deleteUser);
-    this.bindEntityActions('agent', api.toggleAgentStatus, api.deleteAgent);
-    this.bindEntityActions('client', api.toggleClientStatus, api.deleteClient);
-    this.bindEntityActions('platform', api.togglePlatformStatus, api.deletePlatform);
   }
 
-  private bindEntityActions(type: string, toggleFn: (id: number) => Promise<any>, deleteFn: (id: number) => Promise<any>): void {
-    this.container.querySelectorAll(`[data-toggle-${type}]`).forEach((btn) => {
+  private bindTableActions(container: HTMLElement, type: string, toggleFn: (id: number) => Promise<any>, deleteFn: (id: number) => Promise<any>): void {
+    container.querySelectorAll(`[data-toggle-${type}]`).forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = Number(btn.getAttribute(`data-toggle-${type}`));
         if (!confirm('¿Cambiar estado?')) return;
         try {
           const res = await toggleFn(id);
           toast.success(res.message || 'Estado actualizado.');
-          this.fetchTabData();
+          await this.fetchTabData();
         } catch (e: any) {
           toast.error(e.message || 'Error al cambiar estado.');
         }
       });
     });
 
-    this.container.querySelectorAll(`[data-delete-${type}]`).forEach((btn) => {
+    container.querySelectorAll(`[data-delete-${type}]`).forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = Number(btn.getAttribute(`data-delete-${type}`));
         if (!confirm(`¿Eliminar ID ${id}?`)) return;
         try {
           await deleteFn(id);
           toast.success('Eliminado correctamente.');
-          this.fetchTabData();
+          await this.fetchTabData();
         } catch (e: any) {
           toast.error(e.message || 'Error al eliminar.');
         }
@@ -282,7 +285,7 @@ export class SettingsView {
         await this.submitEntityForm(formData);
         toast.success('Guardado correctamente.');
         closeModal();
-        this.fetchTabData();
+        await this.fetchTabData();
       } catch (err: any) {
         toast.error(err.message || 'Error al guardar.');
       }
