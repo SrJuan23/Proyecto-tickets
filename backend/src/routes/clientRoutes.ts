@@ -4,9 +4,9 @@ import { authenticateToken, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', authenticateToken, requireRole('ADMIN', 'AGENTE', 'CONSULTA'), getClients);
-router.post('/', authenticateToken, requireRole('ADMIN', 'AGENTE'), createClient);
-router.put('/:id', authenticateToken, requireRole('ADMIN', 'AGENTE'), updateClient);
-router.patch('/:id/toggle-status', authenticateToken, requireRole('ADMIN', 'AGENTE'), toggleClientStatus);
+router.get('/', authenticateToken, requireRole('ADMIN'), getClients);
+router.post('/', authenticateToken, requireRole('ADMIN'), createClient);
+router.put('/:id', authenticateToken, requireRole('ADMIN'), updateClient);
+router.patch('/:id/toggle-status', authenticateToken, requireRole('ADMIN'), toggleClientStatus);
 
 export default router;
