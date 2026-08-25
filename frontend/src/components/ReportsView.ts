@@ -209,8 +209,8 @@ export class ReportsView {
     const excelBtn = this.container.querySelector('#btn-export-excel') as HTMLAnchorElement;
     const csvBtn = this.container.querySelector('#btn-export-csv') as HTMLAnchorElement;
 
-    if (excelBtn) excelBtn.href = api.getExportUrl('excel', this.filters);
-    if (csvBtn) csvBtn.href = api.getExportUrl('csv', this.filters);
+    if (excelBtn) excelBtn.setAttribute('href', '#');
+    if (csvBtn) csvBtn.setAttribute('href', '#');
   }
 
   private bindEvents(): void {
@@ -228,6 +228,24 @@ export class ReportsView {
 
     this.container.querySelectorAll('select, input').forEach((el) => {
       el.addEventListener('change', handleChange);
+    });
+
+    const handleExport = async (format: 'excel' | 'csv') => {
+      try {
+        await api.downloadExport(format, this.filters);
+      } catch (error: any) {
+        alert(error.message || 'No se pudo generar el archivo.');
+      }
+    };
+
+    this.container.querySelector('#btn-export-excel')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      void handleExport('excel');
+    });
+
+    this.container.querySelector('#btn-export-csv')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      void handleExport('csv');
     });
 
     this.container.querySelector('#btn-print-report')?.addEventListener('click', () => {

@@ -293,6 +293,55 @@ class ApiService {
     });
     return `${API_BASE}/export/${format}?${params.toString()}`;
   }
+
+  async downloadExport(format: 'excel' | 'csv', filters: TicketFilters = {}): Promise<void> {
+    const token = this.token || localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Debes iniciar sesión para exportar reportes.');
+    }
+
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        params.append(key, String(val));
+      }
+    });
+
+    const response = await fetch(`${API_BASE}/export/${format}?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      let message = 'Error al generar el archivo.';
+      try {
+        const payload = await response.clone().json();
+        message = payload.message || message;
+      } catch {
+        const fallback = await response.text();
+        if (fallback) {
+          message = fallback;
+        }
+      }
+      throw new Error(message);
+    }
+
+    const contentDisposition = response.headers.get('content-disposition') || '';
+    const fileNameMatch = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+    const extension = format === 'excel' ? 'xlsx' : 'csv';
+    const filename = fileNameMatch ? fileNameMatch[1] : `reporte.${extension}`;
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 export const api = new ApiService();

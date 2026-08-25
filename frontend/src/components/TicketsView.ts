@@ -425,8 +425,25 @@ export class TicketsView {
         // Update export links with current filter params
         const excelLink = this.container.querySelector('#export-excel-link') as HTMLAnchorElement;
         const csvLink = this.container.querySelector('#export-csv-link') as HTMLAnchorElement;
-        if (excelLink) excelLink.href = api.getExportUrl('excel', this.filters);
-        if (csvLink) csvLink.href = api.getExportUrl('csv', this.filters);
+        if (excelLink) {
+          excelLink.setAttribute('href', '#');
+          excelLink.onclick = (event) => {
+            event.preventDefault();
+            void api.downloadExport('excel', this.filters).catch((error: any) => {
+              alert(error.message || 'No se pudo generar el archivo Excel.');
+            });
+          };
+        }
+
+        if (csvLink) {
+          csvLink.setAttribute('href', '#');
+          csvLink.onclick = (event) => {
+            event.preventDefault();
+            void api.downloadExport('csv', this.filters).catch((error: any) => {
+              alert(error.message || 'No se pudo generar el archivo CSV.');
+            });
+          };
+        }
       }
     } catch (err: any) {
       if (tableContainer) {
