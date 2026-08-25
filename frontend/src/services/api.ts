@@ -145,12 +145,6 @@ class ApiService {
     });
   }
 
-  async toggleTicketStatus(id: number | string) {
-    return this.request(`/tickets/${id}/toggle-status`, {
-      method: 'PATCH'
-    });
-  }
-
   async deleteTicket(id: number | string) {
     return this.request(`/tickets/${id}`, {
       method: 'DELETE'

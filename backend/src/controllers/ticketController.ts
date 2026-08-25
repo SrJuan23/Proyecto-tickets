@@ -544,52 +544,6 @@ export async function changeTicketStatus(req: AuthenticatedRequest, res: Respons
   }
 }
 
-export async function toggleTicketStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const { id } = req.params;
-    const existing = await db.get('SELECT id, estado FROM tickets WHERE id = ?', [id]);
-    if (!existing) {
-      res.status(404).json({ success: false, message: `Caso #${id} no encontrado.` });
-      return;
-    }
-
-    const newStatus = existing.estado === 'ABIERTO' ? 'CERRADO' : 'ABIERTO';
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const actorName = req.user?.nombre || 'Agente de Soporte';
-
-    let newFechaCierre = existing.fecha_cierre;
-    let newTiempoMinutos = existing.tiempo_atencion_minutos;
-
-    if (newStatus === 'CERRADO') {
-      newFechaCierre = now;
-      newTiempoMinutos = calculateMinutesDiff(existing.fecha_creacion || now, now);
-    } else {
-      newFechaCierre = null;
-      newTiempoMinutos = null;
-    }
-
-    await db.run(
-      `UPDATE tickets SET estado = ?, fecha_actualizacion = ?, fecha_cierre = ?, tiempo_atencion_minutos = ? WHERE id = ?`,
-      [newStatus, now, newFechaCierre, newTiempoMinutos, id]
-    );
-
-    await db.run(
-      `INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, valor_anterior, valor_nuevo, fecha)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, actorName, 'CAMBIO_ESTADO', `Estado actualizado de ${existing.estado} a ${newStatus}`, existing.estado, newStatus, now]
-    );
-
-    res.json({
-      success: true,
-      message: `Caso #${id} marcado como ${newStatus}.`,
-      data: { estado: newStatus }
-    });
-  } catch (error: any) {
-    logger.error('Error al modificar estado del caso', { ticketId: req.params.id, error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: 'Error al modificar estado del caso.', error: error.message });
-  }
-}
-
 export async function deleteTicket(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;

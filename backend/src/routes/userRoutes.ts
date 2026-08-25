@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus } from '../controllers/configController';
+import { getUsers, createUser, updateUser, deleteUser } from '../controllers/configController';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
 const router = Router();
@@ -11,6 +11,5 @@ router.get('/', getUsers);
 router.post('/', createUser);
 router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
-router.patch('/:id/toggle-status', toggleUserStatus);
 
 export default router;
