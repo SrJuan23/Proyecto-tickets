@@ -255,5 +255,11 @@ class App {
 }
 
 // Bootstrap Application
-new App();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new App();
+  });
+} else {
+  new App();
+}
 
