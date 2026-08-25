@@ -139,15 +139,17 @@ logger.info(`Sirviendo frontend desde: ${publicDir}`);
 
 app.use(express.static(publicDir));
 
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
+
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
   }
   const indexPath = path.join(publicDir, 'index.html');
-  logger.info(`Sirviendo index.html desde: ${indexPath}, existe: ${fs.existsSync(indexPath)}`);
   res.sendFile(indexPath, (err) => {
     if (err) {
-      logger.error(`Error sirviendo index.html:`, err);
       res.status(500).json({ error: 'index.html not found', path: indexPath });
     }
   });

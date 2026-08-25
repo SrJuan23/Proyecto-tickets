@@ -30,7 +30,7 @@ export class ClientsView {
             canManage
               ? `<button id="new-client-btn" class="px-4 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white font-montserrat text-xs font-semibold rounded-xl shadow-brand transition-all flex items-center gap-2 transform active:scale-95">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                  <span>+ Nuevo Cliente</span>
+                  <span>Nuevo Cliente</span>
                 </button>`
               : ''
           }

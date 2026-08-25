@@ -33,7 +33,7 @@ export class SettingsView {
             </div>
 
             <button id="new-user-btn" class="px-3.5 py-1.5 bg-brand-dark hover:bg-brand-dark-hover text-white text-xs font-montserrat font-semibold rounded-xl transition-colors">
-              + Nuevo Usuario
+              Nuevo Usuario
             </button>
           </div>
 
@@ -115,6 +115,9 @@ export class SettingsView {
                 <span class="text-[11px] font-semibold ${u.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${u.estado}</span>
               </td>
               <td class="py-3 px-4 text-right">
+                <button data-toggle-user="${u.id}" class="text-xs text-amber-600 hover:text-amber-800 font-semibold p-1 mr-2">
+                  ${u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}
+                </button>
                 <button data-delete-user="${u.id}" class="text-xs text-rose-600 hover:text-rose-800 font-semibold p-1">
                   Eliminar
                 </button>
@@ -126,6 +129,21 @@ export class SettingsView {
         </tbody>
       </table>
     `;
+
+    container.querySelectorAll('[data-toggle-user]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.getAttribute('data-toggle-user'));
+        if (confirm('¿Cambiar estado de este usuario?')) {
+          try {
+            const res = await api.toggleUserStatus(id);
+            toast.success(res.message || 'Estado del usuario actualizado.');
+            this.fetchData();
+          } catch (e: any) {
+            toast.error(e.message || 'Error al cambiar estado del usuario.');
+          }
+        }
+      });
+    });
 
     container.querySelectorAll('[data-delete-user]').forEach((btn) => {
       btn.addEventListener('click', async () => {

@@ -11,7 +11,7 @@ import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { TicketModal } from './components/TicketModal';
 import { TicketDetailModal } from './components/TicketDetailModal';
-import { LoginModal } from './components/LoginModal';
+import { LoginPage } from './components/LoginPage';
 import { Ticket, Client, Platform, Agent } from './types';
 
 class App {
@@ -21,6 +21,7 @@ class App {
   private appRoot: HTMLElement;
   private contentContainer!: HTMLElement;
   private mobileBackdrop!: HTMLElement;
+  private loginPageContainer!: HTMLElement;
 
   private clientsCache: Client[] = [];
   private platformsCache: Platform[] = [];
@@ -28,23 +29,43 @@ class App {
 
   constructor() {
     this.appRoot = document.getElementById('app') as HTMLElement;
+    this.loginPageContainer = document.getElementById('login-page') as HTMLElement;
+    const savedRoute = localStorage.getItem('current_route');
+    if (savedRoute) {
+      this.currentRoute = savedRoute;
+    }
     this.init();
   }
 
   private async init(): Promise<void> {
-    // Si no hay sesión activa en localStorage, auto autenticar con cuenta demo de Didier para una experiencia inmediata
-    if (!api.getUser()) {
-      try {
-        await api.login('didier.santamaria@supportdesk.com', 'agente123');
-      } catch (e) {
-        console.warn('Auto-login demo skipped:', e);
-      }
+    const user = api.getUser();
+
+    if (!user) {
+      this.showLoginPage();
+      return;
     }
 
+    if (window.location.pathname === '/login') {
+      window.history.replaceState(null, '', '/');
+    }
+
+    this.showApp();
     this.renderLayout();
     this.bindGlobalEvents();
     await this.preloadAuxiliaryData();
     this.navigate(this.currentRoute);
+  }
+
+  private showLoginPage(): void {
+    this.appRoot.classList.add('hidden');
+    this.loginPageContainer.classList.remove('hidden');
+    const loginPage = new LoginPage(this.loginPageContainer);
+    loginPage.render();
+  }
+
+  private showApp(): void {
+    this.loginPageContainer.classList.add('hidden');
+    this.appRoot.classList.remove('hidden');
   }
 
   private async preloadAuxiliaryData(): Promise<void> {
@@ -97,7 +118,7 @@ class App {
 
     this.header = new Header(headerContainer, {
       onOpenNewTicket: () => this.openNewTicketModal(),
-      onOpenLogin: () => this.openLoginModal(),
+      onOpenLogin: () => {},
       onToggleMobileMenu: () => this.toggleMobileSidebar()
     });
     this.header.render();
@@ -119,6 +140,7 @@ class App {
 
   public navigate(route: string, extraParams?: any): void {
     this.currentRoute = route;
+    localStorage.setItem('current_route', route);
     this.sidebar.setRoute(route);
     this.contentContainer.scrollTop = 0;
 
@@ -219,22 +241,19 @@ class App {
     detailModal.open();
   }
 
-  private openLoginModal(): void {
-    const modal = new LoginModal(() => {
-      this.header.render();
-      this.sidebar.render();
-      this.navigate(this.currentRoute);
-    });
-    modal.open();
-  }
-
   private bindGlobalEvents(): void {
     window.addEventListener('auth-changed', () => {
-      this.header.render();
-      this.sidebar.render();
+      const user = api.getUser();
+      if (!user) {
+        window.location.href = '/login';
+      } else {
+        this.header.render();
+        this.sidebar.render();
+      }
     });
   }
 }
 
 // Bootstrap Application
 new App();
+

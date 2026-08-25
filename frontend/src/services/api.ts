@@ -145,6 +145,12 @@ class ApiService {
     });
   }
 
+  async toggleTicketStatus(id: number | string) {
+    return this.request(`/tickets/${id}/toggle-status`, {
+      method: 'PATCH'
+    });
+  }
+
   async deleteTicket(id: number | string) {
     return this.request(`/tickets/${id}`, {
       method: 'DELETE'
@@ -280,6 +286,12 @@ class ApiService {
   async deleteUser(id: number) {
     return this.request(`/usuarios/${id}`, {
       method: 'DELETE'
+    });
+  }
+
+  async toggleUserStatus(id: number) {
+    return this.request(`/usuarios/${id}/toggle-status`, {
+      method: 'PATCH'
     });
   }
 

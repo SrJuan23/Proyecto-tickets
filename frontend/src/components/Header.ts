@@ -131,14 +131,14 @@ export class Header {
     const switchUserBtn = this.container.querySelector('#switch-user-btn');
     switchUserBtn?.addEventListener('click', () => {
       userDropdown?.classList.add('hidden');
-      this.onOpenLogin();
+      api.clearAuth();
+      window.location.href = '/login';
     });
 
     const logoutBtn = this.container.querySelector('#logout-btn');
     logoutBtn?.addEventListener('click', () => {
       api.clearAuth();
-      this.render();
-      this.onOpenLogin();
+      window.location.href = '/login';
     });
   }
 }

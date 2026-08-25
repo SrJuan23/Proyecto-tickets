@@ -8,7 +8,6 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const db_1 = require("./services/db");
 const seed_1 = require("./services/seed");
@@ -129,15 +128,16 @@ app.use('/api/usuarios', userRoutes_1.default);
 const publicDir = path_1.default.join(__dirname, '../../frontend/dist');
 logger_1.logger.info(`Sirviendo frontend desde: ${publicDir}`);
 app.use(express_1.default.static(publicDir));
+app.get('/login', (req, res) => {
+    res.sendFile(path_1.default.join(publicDir, 'index.html'));
+});
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
         return next();
     }
     const indexPath = path_1.default.join(publicDir, 'index.html');
-    logger_1.logger.info(`Sirviendo index.html desde: ${indexPath}, existe: ${fs_1.default.existsSync(indexPath)}`);
     res.sendFile(indexPath, (err) => {
         if (err) {
-            logger_1.logger.error(`Error sirviendo index.html:`, err);
             res.status(500).json({ error: 'index.html not found', path: indexPath });
         }
     });

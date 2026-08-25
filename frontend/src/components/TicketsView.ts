@@ -108,7 +108,7 @@ export class TicketsView {
               class="px-4 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white font-montserrat text-xs font-semibold rounded-xl shadow-brand transition-all flex items-center gap-2 transform active:scale-95"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-              <span>+ Nuevo caso</span>
+              <span>Nuevo caso</span>
             </button>
           </div>
         </div>
@@ -674,6 +674,13 @@ export class TicketsView {
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </button>
+                    <button 
+                      data-action-toggle="${t.id}"
+                      class="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-white rounded-lg transition-colors shadow-2xs"
+                      title="Activar/Desactivar caso"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -715,6 +722,22 @@ export class TicketsView {
         e.stopPropagation();
         const id = Number(btn.getAttribute('data-action-status'));
         this.openQuickStatusModal(id);
+      });
+    });
+
+    tableContainer.querySelectorAll('[data-action-toggle]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = Number(btn.getAttribute('data-action-toggle'));
+        if (id) {
+          try {
+            const res = await api.toggleTicketStatus(id);
+            toast.success(res.message || `Caso #${id} actualizado.`);
+            this.fetchTickets();
+          } catch (err: any) {
+            toast.error(err.message || 'Error al cambiar estado.');
+          }
+        }
       });
     });
 

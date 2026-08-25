@@ -27,16 +27,24 @@ export class Sidebar {
   public render(): void {
     const user = api.getUser();
     const isAdmin = api.hasRole('ADMIN');
+    const isAgent = api.hasRole('AGENTE');
+    const isConsulta = api.hasRole('CONSULTA');
 
     const navItems = [
       { id: 'dashboard', label: 'Dashboard', icon: this.getDashboardIcon() },
       { id: 'tickets', label: 'Casos', icon: this.getTicketsIcon() },
-      { id: 'clients', label: 'Clientes', icon: this.getClientsIcon() },
-      { id: 'platforms', label: 'Plataformas', icon: this.getPlatformsIcon() },
-      { id: 'agents', label: 'Agentes', icon: this.getAgentsIcon() },
-      { id: 'reports', label: 'Reportes', icon: this.getReportsIcon() },
-      { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon() }
+      { id: 'clients', label: 'Clientes', icon: this.getClientsIcon(), adminOnly: true },
+      { id: 'platforms', label: 'Plataformas', icon: this.getPlatformsIcon(), adminOnly: true },
+      { id: 'agents', label: 'Agentes', icon: this.getAgentsIcon(), adminOnly: true },
+      { id: 'reports', label: 'Reportes', icon: this.getReportsIcon(), adminOrConsulta: true },
+      { id: 'settings', label: 'Configuración', icon: this.getSettingsIcon(), adminOnly: true }
     ];
+
+    const allowedItems = navItems.filter((item) => {
+      if (item.adminOnly) return isAdmin;
+      if (item.adminOrConsulta) return isAdmin || isConsulta;
+      return true;
+    });
 
     this.container.className = `fixed inset-y-0 left-0 z-30 flex flex-col bg-brand-dark text-slate-200 transition-all duration-300 shadow-xl lg:static lg:translate-x-0 ${
       this.isCollapsed ? 'w-20' : 'w-64'
@@ -72,7 +80,7 @@ export class Sidebar {
 
       <!-- Navigation Links -->
       <div class="flex-1 py-4 px-3 overflow-y-auto space-y-1.5">
-        ${navItems
+        ${allowedItems
           .map((item) => {
             const isActive = this.currentRoute === item.id;
             return `
