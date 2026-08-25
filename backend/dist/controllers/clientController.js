@@ -4,6 +4,7 @@ exports.getClients = getClients;
 exports.createClient = createClient;
 exports.updateClient = updateClient;
 exports.toggleClientStatus = toggleClientStatus;
+exports.deleteClient = deleteClient;
 const db_1 = require("../services/db");
 const logger_1 = require("../services/logger");
 async function getClients(req, res) {
@@ -131,5 +132,24 @@ async function toggleClientStatus(req, res) {
     catch (error) {
         logger_1.logger.error('Error al modificar estado del cliente', { clientId: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ success: false, message: 'Error al modificar estado del cliente.', error: error.message });
+    }
+}
+async function deleteClient(req, res) {
+    try {
+        const { id } = req.params;
+        const existing = await db_1.db.get('SELECT id FROM clientes WHERE id = ?', [id]);
+        if (!existing) {
+            res.status(404).json({ success: false, message: 'Cliente no encontrado.' });
+            return;
+        }
+        await db_1.db.run('DELETE FROM clientes WHERE id = ?', [id]);
+        res.json({
+            success: true,
+            message: 'Cliente eliminado correctamente.'
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Error al eliminar cliente', { clientId: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, message: 'Error al eliminar cliente.', error: error.message });
     }
 }

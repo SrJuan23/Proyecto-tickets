@@ -138,3 +138,23 @@ export async function togglePlatformStatus(req: AuthenticatedRequest, res: Respo
     res.status(500).json({ success: false, message: 'Error al modificar estado de plataforma.', error: error.message });
   }
 }
+
+export async function deletePlatform(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const existing = await db.get('SELECT id FROM plataformas WHERE id = ?', [id]);
+    if (!existing) {
+      res.status(404).json({ success: false, message: 'Plataforma no encontrada.' });
+      return;
+    }
+
+    await db.run('DELETE FROM plataformas WHERE id = ?', [id]);
+    res.json({
+      success: true,
+      message: 'Plataforma eliminada correctamente.'
+    });
+  } catch (error: any) {
+    logger.error('Error al eliminar plataforma', { platformId: req.params.id, error: error.message, stack: error.stack });
+    res.status(500).json({ success: false, message: 'Error al eliminar plataforma.', error: error.message });
+  }
+}

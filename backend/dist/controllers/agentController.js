@@ -4,6 +4,7 @@ exports.getAgents = getAgents;
 exports.createAgent = createAgent;
 exports.updateAgent = updateAgent;
 exports.toggleAgentStatus = toggleAgentStatus;
+exports.deleteAgent = deleteAgent;
 const db_1 = require("../services/db");
 const logger_1 = require("../services/logger");
 async function getAgents(req, res) {
@@ -126,5 +127,24 @@ async function toggleAgentStatus(req, res) {
     catch (error) {
         logger_1.logger.error('Error al modificar estado del agente', { agentId: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ success: false, message: 'Error al modificar estado del agente.', error: error.message });
+    }
+}
+async function deleteAgent(req, res) {
+    try {
+        const { id } = req.params;
+        const existing = await db_1.db.get('SELECT id FROM agentes WHERE id = ?', [id]);
+        if (!existing) {
+            res.status(404).json({ success: false, message: 'Agente no encontrado.' });
+            return;
+        }
+        await db_1.db.run('DELETE FROM agentes WHERE id = ?', [id]);
+        res.json({
+            success: true,
+            message: 'Agente eliminado correctamente.'
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Error al eliminar agente', { agentId: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, message: 'Error al eliminar agente.', error: error.message });
     }
 }

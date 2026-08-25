@@ -145,3 +145,23 @@ export async function toggleAgentStatus(req: AuthenticatedRequest, res: Response
     res.status(500).json({ success: false, message: 'Error al modificar estado del agente.', error: error.message });
   }
 }
+
+export async function deleteAgent(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const existing = await db.get('SELECT id FROM agentes WHERE id = ?', [id]);
+    if (!existing) {
+      res.status(404).json({ success: false, message: 'Agente no encontrado.' });
+      return;
+    }
+
+    await db.run('DELETE FROM agentes WHERE id = ?', [id]);
+    res.json({
+      success: true,
+      message: 'Agente eliminado correctamente.'
+    });
+  } catch (error: any) {
+    logger.error('Error al eliminar agente', { agentId: req.params.id, error: error.message, stack: error.stack });
+    res.status(500).json({ success: false, message: 'Error al eliminar agente.', error: error.message });
+  }
+}

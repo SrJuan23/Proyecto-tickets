@@ -150,3 +150,23 @@ export async function toggleClientStatus(req: AuthenticatedRequest, res: Respons
     res.status(500).json({ success: false, message: 'Error al modificar estado del cliente.', error: error.message });
   }
 }
+
+export async function deleteClient(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const existing = await db.get('SELECT id FROM clientes WHERE id = ?', [id]);
+    if (!existing) {
+      res.status(404).json({ success: false, message: 'Cliente no encontrado.' });
+      return;
+    }
+
+    await db.run('DELETE FROM clientes WHERE id = ?', [id]);
+    res.json({
+      success: true,
+      message: 'Cliente eliminado correctamente.'
+    });
+  } catch (error: any) {
+    logger.error('Error al eliminar cliente', { clientId: req.params.id, error: error.message, stack: error.stack });
+    res.status(500).json({ success: false, message: 'Error al eliminar cliente.', error: error.message });
+  }
+}

@@ -4,6 +4,7 @@ exports.getPlatforms = getPlatforms;
 exports.createPlatform = createPlatform;
 exports.updatePlatform = updatePlatform;
 exports.togglePlatformStatus = togglePlatformStatus;
+exports.deletePlatform = deletePlatform;
 const db_1 = require("../services/db");
 const logger_1 = require("../services/logger");
 async function getPlatforms(req, res) {
@@ -119,5 +120,24 @@ async function togglePlatformStatus(req, res) {
     catch (error) {
         logger_1.logger.error('Error al modificar estado de plataforma', { platformId: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ success: false, message: 'Error al modificar estado de plataforma.', error: error.message });
+    }
+}
+async function deletePlatform(req, res) {
+    try {
+        const { id } = req.params;
+        const existing = await db_1.db.get('SELECT id FROM plataformas WHERE id = ?', [id]);
+        if (!existing) {
+            res.status(404).json({ success: false, message: 'Plataforma no encontrada.' });
+            return;
+        }
+        await db_1.db.run('DELETE FROM plataformas WHERE id = ?', [id]);
+        res.json({
+            success: true,
+            message: 'Plataforma eliminada correctamente.'
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Error al eliminar plataforma', { platformId: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, message: 'Error al eliminar plataforma.', error: error.message });
     }
 }
