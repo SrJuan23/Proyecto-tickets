@@ -57,15 +57,19 @@ class App {
   }
 
   private showLoginPage(): void {
-    this.appRoot.classList.add('hidden');
-    this.loginPageContainer.classList.remove('hidden');
-    const loginPage = new LoginPage(this.loginPageContainer);
+    const loginEl = document.getElementById('login-page');
+    const appEl = document.getElementById('app');
+    if (loginEl) loginEl.classList.remove('hidden');
+    if (appEl) appEl.classList.add('hidden');
+    const loginPage = new LoginPage(loginEl || document.body);
     loginPage.render();
   }
 
   private showApp(): void {
-    this.loginPageContainer.classList.add('hidden');
-    this.appRoot.classList.remove('hidden');
+    const loginEl = document.getElementById('login-page');
+    if (loginEl) loginEl.classList.add('hidden');
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.classList.remove('hidden');
   }
 
   private async preloadAuxiliaryData(): Promise<void> {

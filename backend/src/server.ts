@@ -140,6 +140,7 @@ logger.info(`Sirviendo frontend desde: ${publicDir}`);
 app.use(express.static(publicDir));
 
 app.get('/login', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(publicDir, 'index.html'));
 });
 
@@ -148,6 +149,7 @@ app.get('*', (req, res, next) => {
     return next();
   }
   const indexPath = path.join(publicDir, 'index.html');
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(indexPath, (err) => {
     if (err) {
       res.status(500).json({ error: 'index.html not found', path: indexPath });
