@@ -183,3 +183,26 @@ export async function deleteUser(req: AuthenticatedRequest, res: Response): Prom
     res.status(500).json({ success: false, message: 'Error al eliminar usuario.', error: error.message });
   }
 }
+
+export async function toggleUserStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const existing = await db.get('SELECT estado FROM usuarios WHERE id = ?', [id]);
+    if (!existing) {
+      res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+      return;
+    }
+
+    const newStatus = existing.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+    await db.run('UPDATE usuarios SET estado = ? WHERE id = ?', [newStatus, id]);
+
+    res.json({
+      success: true,
+      message: `Usuario marcado como ${newStatus}.`,
+      data: { estado: newStatus }
+    });
+  } catch (error: any) {
+    logger.error('Error al cambiar estado del usuario', { userId: req.params.id, error: error.message, stack: error.stack });
+    res.status(500).json({ success: false, message: 'Error al cambiar estado del usuario.', error: error.message });
+  }
+}
