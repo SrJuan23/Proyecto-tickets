@@ -2,7 +2,6 @@ import {
   User,
   Client,
   Platform,
-  Agent,
   Ticket,
   TicketFilters,
   Pagination,
@@ -74,7 +73,6 @@ class ApiService {
       });
 
       if (response.status === 401 && this.token) {
-        // Token vencido
         this.clearAuth();
       }
 
@@ -89,7 +87,6 @@ class ApiService {
     }
   }
 
-  // --- AUTENTICACIÓN ---
   async login(email: string, password: string) {
     const res = await this.request<{ token: string; user: User }>('/auth/login', {
       method: 'POST',
@@ -109,7 +106,6 @@ class ApiService {
     return this.request<User[]>('/auth/demo-accounts');
   }
 
-  // --- TICKETS ---
   async getTickets(filters: TicketFilters = {}) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, val]) => {
@@ -157,7 +153,6 @@ class ApiService {
     });
   }
 
-  // --- CLIENTES ---
   async getClients(search?: string, estado?: string) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
@@ -191,7 +186,6 @@ class ApiService {
     });
   }
 
-  // --- PLATAFORMAS ---
   async getPlatforms(search?: string, estado?: string) {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
@@ -225,41 +219,6 @@ class ApiService {
     });
   }
 
-  // --- AGENTES ---
-  async getAgents(search?: string, estado?: string) {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (estado) params.append('estado', estado);
-    return this.request<Agent[]>(`/agentes?${params.toString()}`);
-  }
-
-  async createAgent(data: Partial<Agent>) {
-    return this.request<{ id: number }>('/agentes', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async updateAgent(id: number | string, data: Partial<Agent>) {
-    return this.request(`/agentes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async toggleAgentStatus(id: number | string) {
-    return this.request(`/agentes/${id}/toggle-status`, {
-      method: 'PATCH'
-    });
-  }
-
-  async deleteAgent(id: number | string) {
-    return this.request(`/agentes/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  // --- DASHBOARD & ESTADÍSTICAS ---
   async getKPIs() {
     return this.request<DashboardKPIs>('/stats/kpis');
   }
@@ -271,7 +230,6 @@ class ApiService {
     return this.request<ChartDataResponse>(`/stats/charts?${params.toString()}`);
   }
 
-  // --- CONFIGURACIÓN & USUARIOS ---
   async getConfig() {
     return this.request<{ list: any[]; map: Record<string, string> }>('/config');
   }
@@ -313,7 +271,6 @@ class ApiService {
     });
   }
 
-  // --- EXPORTACIÓN ---
   getExportUrl(format: 'excel' | 'csv', filters: TicketFilters = {}): string {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, val]) => {

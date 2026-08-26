@@ -5,7 +5,7 @@ import { logger } from '../services/logger';
 export async function getKPIs(req: Request, res: Response): Promise<void> {
   try {
     const sql = `
-      SELECT 
+      SELECT
         COUNT(*) as total_casos,
         SUM(CASE WHEN estado = 'ABIERTO' THEN 1 ELSE 0 END) as casos_abiertos,
         SUM(CASE WHEN estado = 'EN PROCESO' THEN 1 ELSE 0 END) as casos_en_proceso,
@@ -50,7 +50,6 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     const dateField = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : "DATE(t.fecha_creacion)";
     const monthField = isPostgres ? "TO_CHAR(t.fecha_creacion, 'YYYY-MM')" : "strftime('%Y-%m', t.fecha_creacion)";
 
-    // Filtros de fecha según período
     if (periodo === 'hoy') {
       conditions.push(isPostgres ? `${dateField} = CURRENT_DATE` : `${dateField} = DATE('now')`);
     } else if (periodo === '7d') {
@@ -74,7 +73,6 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
 
     const whereClause = conditions.join(' AND ');
 
-    // 1. Por plataforma
     const platSql = `
       SELECT p.nombre, p.color_badge, COUNT(t.id) as cantidad
       FROM plataformas p
@@ -84,7 +82,6 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byPlatform = await db.query(platSql, params);
 
-    // 2. Por prioridad
     const prioSql = `
       SELECT t.prioridad, COUNT(t.id) as cantidad
       FROM tickets t
@@ -93,7 +90,6 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byPriority = await db.query(prioSql, params);
 
-    // 3. Por estado
     const statSql = `
       SELECT t.estado, COUNT(t.id) as cantidad
       FROM tickets t
@@ -102,17 +98,6 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byStatus = await db.query(statSql, params);
 
-    // 4. Por agente
-    const agentSql = `
-      SELECT a.nombre, COUNT(t.id) as cantidad
-      FROM agentes a
-      LEFT JOIN tickets t ON a.id = t.agente_id AND ${whereClause}
-      GROUP BY a.id
-      ORDER BY cantidad DESC
-    `;
-    const byAgent = await db.query(agentSql, params);
-
-    // 5. Por cliente (Top 5)
     const clientSql = `
       SELECT c.nombre, COUNT(t.id) as cantidad
       FROM clientes c
@@ -124,10 +109,9 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byClient = await db.query(clientSql, params);
 
-    // 6. Tendencia temporal (por día)
     const trendGroup = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
     const trendSql = `
-      SELECT 
+      SELECT
         ${trendGroup} as fecha,
         COUNT(t.id) as total,
         SUM(CASE WHEN t.estado = 'CERRADO' OR t.estado = 'RESUELTO' THEN 1 ELSE 0 END) as cerrados
@@ -144,7 +128,6 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
         by_platform: byPlatform,
         by_priority: byPriority,
         by_status: byStatus,
-        by_agent: byAgent,
         by_client: byClient,
         trend
       }

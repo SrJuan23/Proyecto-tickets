@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
   rol ENUM('ADMIN', 'AGENTE', 'CONSULTA') NOT NULL DEFAULT 'AGENTE',
   estado ENUM('ACTIVO', 'INACTIVO') NOT NULL DEFAULT 'ACTIVO',
   avatar_url VARCHAR(255) NULL,
+  telefono VARCHAR(50) NULL,
+  especialidad VARCHAR(100) NULL,
   fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -39,18 +41,7 @@ CREATE TABLE IF NOT EXISTS plataformas (
   fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 4. Tabla: agentes
-CREATE TABLE IF NOT EXISTS agentes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(150) NOT NULL UNIQUE,
-  email VARCHAR(150) NULL,
-  telefono VARCHAR(50) NULL,
-  especialidad VARCHAR(100) NULL,
-  estado ENUM('ACTIVO', 'INACTIVO') NOT NULL DEFAULT 'ACTIVO',
-  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
--- 5. Tabla: tickets
+-- 4. Tabla: tickets
 CREATE TABLE IF NOT EXISTS tickets (
   id INT AUTO_INCREMENT PRIMARY KEY,
   prioridad ENUM('BAJO', 'MEDIO', 'ALTO', 'CRITICO') NOT NULL DEFAULT 'MEDIO',
@@ -62,7 +53,6 @@ CREATE TABLE IF NOT EXISTS tickets (
   fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   servicenow VARCHAR(50) NULL,
   turno ENUM('NA', 'T1', 'T2', 'T4', 'TD', 'TN') NOT NULL DEFAULT 'NA',
-  agente_id INT NOT NULL,
   estado ENUM('ABIERTO', 'EN PROCESO', 'PENDIENTE', 'RESUELTO', 'CERRADO') NOT NULL DEFAULT 'ABIERTO',
   fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   fecha_cierre DATETIME NULL,
@@ -71,16 +61,14 @@ CREATE TABLE IF NOT EXISTS tickets (
   INDEX idx_prioridad (prioridad),
   INDEX idx_cliente (cliente_id),
   INDEX idx_plataforma (plataforma_id),
-  INDEX idx_agente (agente_id),
   INDEX idx_turno (turno),
   INDEX idx_fecha_creacion (fecha_creacion),
   INDEX idx_servicenow (servicenow),
   CONSTRAINT fk_ticket_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON UPDATE CASCADE,
-  CONSTRAINT fk_ticket_plataforma FOREIGN KEY (plataforma_id) REFERENCES plataformas(id) ON UPDATE CASCADE,
-  CONSTRAINT fk_ticket_agente FOREIGN KEY (agente_id) REFERENCES agentes(id) ON UPDATE CASCADE
+  CONSTRAINT fk_ticket_plataforma FOREIGN KEY (plataforma_id) REFERENCES plataformas(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
--- 6. Tabla: historial_ticket
+-- 5. Tabla: historial_ticket
 CREATE TABLE IF NOT EXISTS historial_ticket (
   id INT AUTO_INCREMENT PRIMARY KEY,
   ticket_id INT NOT NULL,
@@ -94,7 +82,7 @@ CREATE TABLE IF NOT EXISTS historial_ticket (
   CONSTRAINT fk_historial_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 7. Tabla: configuracion
+-- 6. Tabla: configuracion
 CREATE TABLE IF NOT EXISTS configuracion (
   clave VARCHAR(100) PRIMARY KEY,
   valor TEXT NOT NULL,

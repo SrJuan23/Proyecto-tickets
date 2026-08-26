@@ -205,10 +205,6 @@ export class TicketDetailModal {
             <span class="font-mono font-bold text-brand-primary">${ticket.turno}</span>
           </div>
           <div>
-            <span class="text-slate-400 block text-[11px]">Atendido por:</span>
-            <span class="font-semibold text-slate-800">${ticket.agente_nombre || 'NA'}</span>
-          </div>
-          <div>
             <span class="text-slate-400 block text-[11px]">Fecha Creación:</span>
             <span class="font-mono text-slate-700">${ticket.fecha_creacion}</span>
           </div>

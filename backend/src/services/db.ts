@@ -55,7 +55,7 @@ class DatabaseService {
       console.log(`[DB] Conectado exitosamente al pool de MySQL: ${process.env.DB_HOST}:${process.env.DB_PORT}`);
     } else if (this.dbClient === 'postgres') {
       const connectionString = process.env.DATABASE_URL || process.env.DB_HOST || '';
-      
+
       this.pgPool = new Pool({
         connectionString: connectionString,
         max: 10
@@ -101,16 +101,6 @@ class DatabaseService {
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS agentes (
-        id SERIAL PRIMARY KEY,
-        nombre VARCHAR(150) NOT NULL UNIQUE,
-        email VARCHAR(150) NULL,
-        telefono VARCHAR(50) NULL,
-        especialidad VARCHAR(100) NULL,
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
       CREATE TABLE IF NOT EXISTS tickets (
         id SERIAL PRIMARY KEY,
         prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
@@ -122,7 +112,6 @@ class DatabaseService {
         fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         servicenow VARCHAR(50) NULL,
         turno VARCHAR(10) NOT NULL DEFAULT 'NA',
-        agente_id INTEGER NULL REFERENCES agentes(id),
         estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
         fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         fecha_cierre TIMESTAMP NULL,
@@ -151,16 +140,15 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad);
       CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id);
       CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id);
-      CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id);
       CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno);
       CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion);
       CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow);
     `;
 
-      await this.pgPool!.query(schemaSql);
-      console.log('[DB] Schema PostgreSQL inicializado correctamente');
-      await this.migrateUsuariosTelefonoEspecialidadPostgres();
-    }
+    await this.pgPool!.query(schemaSql);
+    console.log('[DB] Schema PostgreSQL inicializado correctamente');
+    await this.migrateUsuariosTelefonoEspecialidadPostgres();
+  }
 
   private initSqliteSchema(): void {
     const schemaSql = `
@@ -197,16 +185,6 @@ class DatabaseService {
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS agentes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre VARCHAR(150) NOT NULL UNIQUE,
-        email VARCHAR(150) NULL,
-        telefono VARCHAR(50) NULL,
-        especialidad VARCHAR(100) NULL,
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
       CREATE TABLE IF NOT EXISTS tickets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
@@ -218,14 +196,12 @@ class DatabaseService {
         fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         servicenow VARCHAR(50) NULL,
         turno VARCHAR(10) NOT NULL DEFAULT 'NA',
-        agente_id INTEGER NULL,
         estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
         fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
         fecha_cierre DATETIME NULL,
         tiempo_atencion_minutos INTEGER NULL,
         FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-        FOREIGN KEY (plataforma_id) REFERENCES plataformas(id),
-        FOREIGN KEY (agente_id) REFERENCES agentes(id)
+        FOREIGN KEY (plataforma_id) REFERENCES plataformas(id)
       );
 
       CREATE TABLE IF NOT EXISTS historial_ticket (
@@ -251,14 +227,12 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad);
       CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id);
       CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id);
-      CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id);
       CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno);
       CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion);
       CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow);
     `;
 
     this.sqliteDb.exec(schemaSql);
-    this.migrateTicketsAgenteNullable();
     this.migrateUsuariosTelefonoEspecialidad();
   }
 
@@ -286,59 +260,6 @@ class DatabaseService {
       console.log('[DB] Migracion PostgreSQL aplicada: telefono y especialidad en usuarios.');
     } catch (err) {
       console.error('[DB] Error en migracion PostgreSQL de telefono/especialidad:', err);
-    }
-  }
-
-  private migrateTicketsAgenteNullable(): void {
-    try {
-      const cols = this.sqliteDb.pragma(`table_info(tickets)`);
-      const agenteCol = (cols as any[]).find((c) => c.name === 'agente_id');
-      if (!agenteCol || agenteCol.notnull === 0) return;
-
-      this.sqliteDb.exec(`
-        CREATE TABLE IF NOT EXISTS tickets_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
-          cliente_id INTEGER NOT NULL,
-          asunto VARCHAR(255) NOT NULL,
-          descripcion TEXT NOT NULL,
-          plataforma_id INTEGER NOT NULL,
-          solicitante VARCHAR(150) NOT NULL,
-          fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          servicenow VARCHAR(50) NULL,
-          turno VARCHAR(10) NOT NULL DEFAULT 'NA',
-          agente_id INTEGER NULL,
-          estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
-          fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-          fecha_cierre DATETIME NULL,
-          tiempo_atencion_minutos INTEGER NULL,
-          FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-          FOREIGN KEY (plataforma_id) REFERENCES plataformas(id),
-          FOREIGN KEY (agente_id) REFERENCES agentes(id)
-        );
-      `);
-
-      this.sqliteDb.exec(`
-        INSERT INTO tickets_new
-        SELECT id, prioridad, cliente_id, asunto, descripcion, plataforma_id, solicitante, fecha_creacion, servicenow, turno, agente_id, estado, fecha_actualizacion, fecha_cierre, tiempo_atencion_minutos
-        FROM tickets
-      `);
-
-      this.sqliteDb.exec(`DROP TABLE tickets`);
-      this.sqliteDb.exec(`ALTER TABLE tickets_new RENAME TO tickets`);
-
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion)`);
-      this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow)`);
-
-      console.log('[DB] Migracion aplicada: agente_id ahora permite NULL en tickets.');
-    } catch (err) {
-      console.error('[DB] Error en migracion de agente_id nullable:', err);
     }
   }
 

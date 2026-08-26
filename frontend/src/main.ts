@@ -6,13 +6,12 @@ import { DashboardView } from './components/DashboardView';
 import { TicketsView } from './components/TicketsView';
 import { ClientsView } from './components/ClientsView';
 import { PlatformsView } from './components/PlatformsView';
-import { AgentsView } from './components/AgentsView';
 import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { TicketModal } from './components/TicketModal';
 import { TicketDetailModal } from './components/TicketDetailModal';
 import { LoginPage } from './components/LoginPage';
-import { Ticket, Client, Platform, Agent } from './types';
+import { Ticket, Client, Platform } from './types';
 
 class App {
   private currentRoute = 'dashboard';
@@ -25,7 +24,6 @@ class App {
 
   private clientsCache: Client[] = [];
   private platformsCache: Platform[] = [];
-  private agentsCache: Agent[] = [];
 
   constructor() {
     this.appRoot = document.getElementById('app') as HTMLElement;
@@ -74,14 +72,12 @@ class App {
 
   private async preloadAuxiliaryData(): Promise<void> {
     try {
-      const [cRes, pRes, aRes] = await Promise.all([
+      const [cRes, pRes] = await Promise.all([
         api.getClients(),
-        api.getPlatforms(),
-        api.getAgents()
+        api.getPlatforms()
       ]);
       if (cRes.data) this.clientsCache = cRes.data;
       if (pRes.data) this.platformsCache = pRes.data;
-      if (aRes.data) this.agentsCache = aRes.data;
     } catch (e) {
       console.error('Error preloading data:', e);
     }
@@ -90,20 +86,14 @@ class App {
   private renderLayout(): void {
     this.appRoot.innerHTML = `
       <div class="flex h-screen overflow-hidden bg-brand-bg">
-        <!-- Sidebar container -->
         <aside id="sidebar-root"></aside>
 
-        <!-- Mobile sidebar backdrop -->
         <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-20 hidden lg:hidden backdrop-blur-xs transition-opacity"></div>
 
-        <!-- Main content area -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <!-- Header container -->
           <header id="header-root"></header>
 
-          <!-- Router View Container -->
           <main id="main-content-root" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
-            <!-- Rendered view goes here -->
           </main>
         </div>
       </div>
@@ -181,13 +171,6 @@ class App {
         platformsView.render();
         break;
 
-      case 'agents':
-        const agentsView = new AgentsView(this.contentContainer, (agentId) => {
-          this.navigate('tickets', { filterKey: 'agente_id', filterVal: String(agentId) });
-        });
-        agentsView.render();
-        break;
-
       case 'reports':
         const reportsView = new ReportsView(this.contentContainer);
         reportsView.render();
@@ -209,7 +192,6 @@ class App {
     const modal = new TicketModal({
       clients: this.clientsCache,
       platforms: this.platformsCache,
-      agents: this.agentsCache,
       onSuccess: () => {
         if (this.currentRoute === 'tickets' || this.currentRoute === 'dashboard') {
           this.navigate(this.currentRoute);
@@ -227,7 +209,6 @@ class App {
       ticket,
       clients: this.clientsCache,
       platforms: this.platformsCache,
-      agents: this.agentsCache,
       onSuccess: () => {
         this.navigate(this.currentRoute);
       }
@@ -258,6 +239,4 @@ class App {
   }
 }
 
-// Bootstrap Application
 new App();
-

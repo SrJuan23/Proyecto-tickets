@@ -37,16 +37,6 @@ CREATE TABLE IF NOT EXISTS plataformas (
   fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Tabla: agentes (Personal de soporte técnico)
-CREATE TABLE IF NOT EXISTS agentes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  nombre VARCHAR(150) NOT NULL UNIQUE,
-  email VARCHAR(150) NULL,
-  telefono VARCHAR(50) NULL,
-  especialidad VARCHAR(100) NULL,
-  estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO', -- 'ACTIVO', 'INACTIVO'
-  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-);
 
 -- 5. Tabla: tickets (Registro principal de casos de soporte)
 CREATE TABLE IF NOT EXISTS tickets (
@@ -60,14 +50,12 @@ CREATE TABLE IF NOT EXISTS tickets (
   fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   servicenow VARCHAR(50) NULL,
   turno VARCHAR(10) NOT NULL DEFAULT 'NA', -- 'NA', 'T1', 'T2', 'T4', 'TD', 'TN'
-  agente_id INTEGER NOT NULL,
   estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO', -- 'ABIERTO', 'EN PROCESO', 'PENDIENTE', 'RESUELTO', 'CERRADO'
   fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
   fecha_cierre DATETIME NULL,
   tiempo_atencion_minutos INTEGER NULL,
   FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-  FOREIGN KEY (plataforma_id) REFERENCES plataformas(id),
-  FOREIGN KEY (agente_id) REFERENCES agentes(id)
+  FOREIGN KEY (plataforma_id) REFERENCES plataformas(id)
 );
 
 -- 6. Tabla: historial_ticket (Trazabilidad y auditoría de eventos)
@@ -96,7 +84,6 @@ CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado);
 CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad);
 CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno);
 CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion);
 CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow);

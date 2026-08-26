@@ -1,14 +1,13 @@
 import { api } from '../services/api';
 import { toast } from '../services/toast';
-import { User, Agent, Client, Platform } from '../types';
+import { User, Client, Platform } from '../types';
 
-type EntityTab = 'users' | 'agents' | 'clients' | 'platforms';
+type EntityTab = 'users' | 'clients' | 'platforms';
 
 export class SettingsView {
   private container: HTMLElement;
   private activeTab: EntityTab = 'users';
   private users: User[] = [];
-  private agents: Agent[] = [];
   private clients: Client[] = [];
   private platforms: Platform[] = [];
 
@@ -30,7 +29,6 @@ export class SettingsView {
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-card overflow-hidden">
           <div class="flex border-b border-slate-200/80">
             <button data-tab="users" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'users' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Usuarios</button>
-            <button data-tab="agents" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'agents' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Agentes</button>
             <button data-tab="clients" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'clients' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Clientes</button>
             <button data-tab="platforms" class="settings-tab px-4 py-3 text-xs font-montserrat font-bold ${this.activeTab === 'platforms' ? 'text-brand-primary border-b-2 border-brand-primary bg-brand-primary-light/40' : 'text-slate-500 hover:text-slate-700'}">Plataformas</button>
           </div>
@@ -75,7 +73,6 @@ export class SettingsView {
   private getTabTitle(): string {
     switch (this.activeTab) {
       case 'users': return 'Usuarios del Sistema';
-      case 'agents': return 'Agentes de Soporte';
       case 'clients': return 'Clientes / Empresas';
       case 'platforms': return 'Plataformas Tecnológicas';
     }
@@ -87,10 +84,6 @@ export class SettingsView {
         const res = await api.getUsers();
         this.users = res.data || [];
         this.renderUsersTable();
-      } else if (this.activeTab === 'agents') {
-        const res = await api.getAgents();
-        this.agents = res.data || [];
-        this.renderAgentsTable();
       } else if (this.activeTab === 'clients') {
         const res = await api.getClients();
         this.clients = res.data || [];
@@ -124,23 +117,6 @@ export class SettingsView {
       <td class="py-3 px-4"><span class="text-[11px] font-semibold ${u.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${u.estado}</span></td>
     `, 'user');
     this.bindTableActions(container as HTMLElement, 'user', api, 'toggleUserStatus', 'deleteUser');
-  }
-
-  private renderAgentsTable(): void {
-    const container = this.container.querySelector('#entity-table-container');
-    if (!container) return;
-    container.innerHTML = this.buildTable([
-      { key: 'nombre', label: 'Agente' },
-      { key: 'email', label: 'Correo' },
-      { key: 'especialidad', label: 'Especialidad' },
-      { key: 'estado', label: 'Estado' }
-    ], this.agents, (a) => `
-      <td class="py-3 px-4 font-montserrat font-bold text-slate-800">${a.nombre}</td>
-      <td class="py-3 px-4 text-slate-600">${a.email || '-'}</td>
-      <td class="py-3 px-4 text-slate-600">${a.especialidad || '-'}</td>
-      <td class="py-3 px-4"><span class="text-[11px] font-semibold ${a.estado === 'ACTIVO' ? 'text-emerald-600' : 'text-slate-400'}">${a.estado}</span></td>
-    `, 'agent');
-    this.bindTableActions(container as HTMLElement, 'agent', api, 'toggleAgentStatus', 'deleteAgent');
   }
 
   private renderClientsTable(): void {
@@ -297,7 +273,6 @@ export class SettingsView {
   private getModalTitle(): string {
     switch (this.activeTab) {
       case 'users': return 'Crear Usuario del Sistema';
-      case 'agents': return 'Registrar Nuevo Agente';
       case 'clients': return 'Registrar Nuevo Cliente';
       case 'platforms': return 'Registrar Nueva Plataforma';
     }
@@ -311,13 +286,6 @@ export class SettingsView {
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo *</label><input type="email" name="email" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contraseña *</label><input type="password" name="password" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Rol *</label><select name="rol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"><option value="AGENTE">AGENTE</option><option value="ADMIN">ADMIN</option><option value="CONSULTA">CONSULTA</option></select></div>
-        `;
-      case 'agents':
-        return `
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo</label><input type="email" name="email" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Especialidad</label><input type="text" name="especialidad" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
         `;
       case 'clients':
         return `
@@ -344,9 +312,6 @@ export class SettingsView {
     switch (this.activeTab) {
       case 'users':
         await api.createUser({ nombre: data.nombre, email: data.email, password: data.password, rol: data.rol });
-        break;
-      case 'agents':
-        await api.createAgent({ nombre: data.nombre, email: data.email, telefono: data.telefono, especialidad: data.especialidad });
         break;
       case 'clients':
         await api.createClient({ nombre: data.nombre, nit: data.nit, contacto_principal: data.contacto_principal, correo_contacto: data.correo_contacto, telefono: data.telefono });

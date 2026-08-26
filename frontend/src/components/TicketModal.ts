@@ -1,27 +1,24 @@
 import { api } from '../services/api';
 import { toast } from '../services/toast';
-import { Ticket, Client, Platform, Agent, PrioridadTicket, EstadoTicket, TurnoTicket } from '../types';
+import { Ticket, Client, Platform, PrioridadTicket, EstadoTicket, TurnoTicket } from '../types';
 
 export class TicketModal {
   private ticket: Ticket | null = null;
   private isEdit: boolean = false;
   private clients: Client[] = [];
   private platforms: Platform[] = [];
-  private agents: Agent[] = [];
   private onSuccess: () => void;
 
   constructor(options: {
     ticket?: Ticket | null;
     clients: Client[];
     platforms: Platform[];
-    agents: Agent[];
     onSuccess: () => void;
   }) {
     this.ticket = options.ticket || null;
     this.isEdit = !!options.ticket;
     this.clients = options.clients.filter((c) => c.estado === 'ACTIVO');
     this.platforms = options.platforms.filter((p) => p.estado === 'ACTIVO');
-    this.agents = options.agents.filter((a) => a.estado === 'ACTIVO');
     this.onSuccess = options.onSuccess;
   }
 
@@ -32,7 +29,6 @@ export class TicketModal {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fade-in';
 
-    const currentUser = api.getUser();
     const isAdmin = api.hasRole('ADMIN');
 
     const defaultDate = this.ticket?.fecha_creacion
@@ -176,19 +172,6 @@ export class TicketModal {
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <!-- Atendido por -->
-              <div>
-                <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">
-                  Atendido por <span class="text-rose-500">*</span>
-                </label>
-                 <select name="agente_id" id="form-agente" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-lato focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary focus:bg-white focus:outline-none">
-                   <option value="">NA - No Asignado</option>
-                   ${this.agents.map((a) => `
-                     <option value="${a.id}" ${this.ticket?.agente_id === a.id || (!this.ticket && currentUser?.nombre === a.nombre) ? 'selected' : ''}>${a.nombre}</option>
-                   `).join('')}
-                 </select>
-              </div>
-
               <!-- Turno -->
               <div>
                 <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">
@@ -305,7 +288,6 @@ export class TicketModal {
           solicitante: formData.get('solicitante'),
           asunto: formData.get('asunto'),
           descripcion: formData.get('descripcion'),
-          agente_id: formData.get('agente_id') ? Number(formData.get('agente_id')) : null,
           turno: formData.get('turno'),
           estado: formData.get('estado'),
           servicenow: formData.get('servicenow') || null,

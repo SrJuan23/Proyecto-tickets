@@ -1,6 +1,6 @@
 import { api } from '../services/api';
 import { toast } from '../services/toast';
-import { Ticket, TicketFilters, Pagination, Client, Platform, Agent } from '../types';
+import { Ticket, TicketFilters, Pagination, Client, Platform } from '../types';
 
 export class TicketsView {
   private container: HTMLElement;
@@ -9,7 +9,6 @@ export class TicketsView {
     prioridad: '',
     cliente_id: '',
     plataforma_id: '',
-    agente_id: '',
     turno: '',
     estado: '',
     fecha_desde: '',
@@ -24,7 +23,6 @@ export class TicketsView {
   private pagination: Pagination = { total: 0, page: 1, limit: 25, totalPages: 1 };
   private clientsList: Client[] = [];
   private platformsList: Platform[] = [];
-  private agentsList: Agent[] = [];
   private isFiltersOpen = false;
 
   private onOpenNewTicket: () => void;
@@ -125,7 +123,7 @@ export class TicketsView {
                 type="text" 
                 id="ticket-search-input"
                 value="${this.filters.search || ''}"
-                placeholder="Buscar caso por ID, cliente, asunto, solicitante, ServiceNow, agente..." 
+                placeholder="Buscar caso por ID, cliente, asunto, solicitante, ServiceNow..." 
                 class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-lato text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary focus:bg-white transition-all"
               />
             </div>
@@ -161,7 +159,7 @@ export class TicketsView {
           </div>
 
           <!-- Advanced Filters Panel (Collapsible) -->
-          <div id="advanced-filters-panel" class="${this.isFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 pt-3 border-t border-slate-100">
+          <div id="advanced-filters-panel" class="${this.isFiltersOpen ? 'grid' : 'hidden'} grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100">
             <!-- 1. Prioridad -->
             <div>
               <label class="block text-[11px] font-montserrat font-semibold text-slate-600 mb-1">Prioridad</label>
@@ -223,18 +221,7 @@ export class TicketsView {
               </select>
             </div>
 
-            <!-- 6. Agente -->
-            <div>
-              <label class="block text-[11px] font-montserrat font-semibold text-slate-600 mb-1">Atendido por</label>
-              <select id="filter-agente" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-lato focus:ring-1 focus:ring-brand-primary focus:outline-none">
-                <option value="">Todos los agentes</option>
-                ${this.agentsList
-                  .map((a) => `<option value="${a.id}" ${String(this.filters.agente_id) === String(a.id) ? 'selected' : ''}>${a.nombre}</option>`)
-                  .join('')}
-              </select>
-            </div>
-
-            <!-- 7. Rango Fechas -->
+            <!-- 6. Rango Fechas -->
             <div>
               <label class="block text-[11px] font-montserrat font-semibold text-slate-600 mb-1">Fecha Desde / Hasta</label>
               <div class="flex items-center gap-1">
@@ -274,7 +261,6 @@ export class TicketsView {
       this.filters.prioridad ||
       this.filters.cliente_id ||
       this.filters.plataforma_id ||
-      this.filters.agente_id ||
       this.filters.turno ||
       this.filters.estado ||
       this.filters.fecha_desde ||
@@ -287,7 +273,6 @@ export class TicketsView {
     if (this.filters.prioridad) count++;
     if (this.filters.cliente_id) count++;
     if (this.filters.plataforma_id) count++;
-    if (this.filters.agente_id) count++;
     if (this.filters.turno) count++;
     if (this.filters.estado) count++;
     if (this.filters.fecha_desde || this.filters.fecha_hasta) count++;
@@ -312,11 +297,6 @@ export class TicketsView {
     if (this.filters.plataforma_id) {
       const p = this.platformsList.find((item) => String(item.id) === String(this.filters.plataforma_id));
       chips.push({ label: `Plataforma: ${p?.nombre || this.filters.plataforma_id}`, key: 'plataforma_id' });
-    }
-
-    if (this.filters.agente_id) {
-      const a = this.agentsList.find((item) => String(item.id) === String(this.filters.agente_id));
-      chips.push({ label: `Agente: ${a?.nombre || this.filters.agente_id}`, key: 'agente_id' });
     }
 
     if (this.filters.fecha_desde || this.filters.fecha_hasta) {
@@ -344,15 +324,13 @@ export class TicketsView {
 
   private async fetchAuxiliaryData(): Promise<void> {
     try {
-      if (this.clientsList.length === 0 || this.platformsList.length === 0 || this.agentsList.length === 0) {
-        const [cRes, pRes, aRes] = await Promise.all([
+      if (this.clientsList.length === 0 || this.platformsList.length === 0) {
+        const [cRes, pRes] = await Promise.all([
           api.getClients(),
-          api.getPlatforms(),
-          api.getAgents()
+          api.getPlatforms()
         ]);
         if (cRes.data) this.clientsList = cRes.data;
         if (pRes.data) this.platformsList = pRes.data;
-        if (aRes.data) this.agentsList = aRes.data;
 
         // Re-render filter dropdowns options if loaded
         this.updateFilterDropdownOptions();
@@ -382,17 +360,6 @@ export class TicketsView {
         opt.text = c.nombre;
         if (String(this.filters.cliente_id) === String(c.id)) opt.selected = true;
         clientSelect.appendChild(opt);
-      });
-    }
-
-    const agentSelect = this.container.querySelector('#filter-agente') as HTMLSelectElement;
-    if (agentSelect && agentSelect.options.length <= 1) {
-      this.agentsList.forEach((a) => {
-        const opt = document.createElement('option');
-        opt.value = String(a.id);
-        opt.text = a.nombre;
-        if (String(this.filters.agente_id) === String(a.id)) opt.selected = true;
-        agentSelect.appendChild(opt);
       });
     }
   }
@@ -546,12 +513,6 @@ export class TicketsView {
                 ${this.getSortIcon('turno')}
               </div>
             </th>
-            <th class="py-3.5 px-4 cursor-pointer hover:text-brand-primary transition-colors" data-sort="agente">
-              <div class="flex items-center gap-1.5">
-                <span>Atendido por</span>
-                ${this.getSortIcon('agente')}
-              </div>
-            </th>
             <th class="py-3.5 px-4 cursor-pointer hover:text-brand-primary transition-colors" data-sort="estado">
               <div class="flex items-center gap-1.5">
                 <span>Estado</span>
@@ -636,11 +597,6 @@ export class TicketsView {
                   <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-brand-primary-light text-brand-primary">
                     ${t.turno}
                   </span>
-                </td>
-
-                <!-- Atendido por -->
-                <td class="py-3.5 px-4 whitespace-nowrap text-slate-800 font-medium">
-                  ${t.agente_nombre || 'NA'}
                 </td>
 
                 <!-- Estado -->
@@ -882,7 +838,6 @@ export class TicketsView {
     bindSelect('#filter-plataforma', 'plataforma_id');
     bindSelect('#filter-turno', 'turno');
     bindSelect('#filter-cliente', 'cliente_id');
-    bindSelect('#filter-agente', 'agente_id');
 
     const desdeInput = this.container.querySelector('#filter-fecha-desde') as HTMLInputElement;
     desdeInput?.addEventListener('change', () => {
@@ -944,7 +899,6 @@ export class TicketsView {
       prioridad: '',
       cliente_id: '',
       plataforma_id: '',
-      agente_id: '',
       turno: '',
       estado: '',
       fecha_desde: '',

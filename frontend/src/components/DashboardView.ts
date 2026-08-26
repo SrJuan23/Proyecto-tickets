@@ -111,21 +111,7 @@ export class DashboardView {
             </div>
           </div>
 
-          <!-- 4. Casos por Agente -->
-          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card flex flex-col lg:col-span-2">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-sm font-montserrat font-bold text-slate-800 flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-brand-accent1"></span>
-                Carga de Trabajo por Agente de Soporte
-              </h3>
-              <span class="text-[11px] font-lato text-slate-400">Productividad</span>
-            </div>
-            <div class="relative flex-1 min-h-[220px]">
-              <canvas id="chart-agent"></canvas>
-            </div>
-          </div>
-
-          <!-- 5. Top Clientes -->
+          <!-- 4. Top Clientes -->
           <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card flex flex-col">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-sm font-montserrat font-bold text-slate-800 flex items-center gap-2">
@@ -381,34 +367,7 @@ export class DashboardView {
       });
     }
 
-    // 4. Chart Agent (Horizontal Bar)
-    const ctxAgent = (this.container.querySelector('#chart-agent') as HTMLCanvasElement)?.getContext('2d');
-    if (ctxAgent) {
-      this.chartInstances['agent'] = new Chart(ctxAgent, {
-        type: 'bar',
-        data: {
-          labels: data.by_agent.map((a) => a.nombre),
-          datasets: [{
-            label: 'Casos Atendidos',
-            data: data.by_agent.map((a) => a.cantidad),
-            backgroundColor: '#5B53FF',
-            borderRadius: 6
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1, font: { family: 'Lato' } } },
-            y: { grid: { display: false }, ticks: { font: { family: 'Montserrat', size: 11 } } }
-          }
-        }
-      });
-    }
-
-    // 5. Chart Client (Bar)
+    // 4. Chart Client (Bar)
     const ctxClient = (this.container.querySelector('#chart-client') as HTMLCanvasElement)?.getContext('2d');
     if (ctxClient) {
       this.chartInstances['client'] = new Chart(ctxClient, {
@@ -505,7 +464,6 @@ export class DashboardView {
             <th class="py-3 px-4">Cliente</th>
             <th class="py-3 px-4">Asunto</th>
             <th class="py-3 px-4">Plataforma</th>
-            <th class="py-3 px-4">Atendido Por</th>
             <th class="py-3 px-4">Estado</th>
             <th class="py-3 px-4 text-right">Acción</th>
           </tr>
@@ -530,7 +488,6 @@ export class DashboardView {
                   ${t.plataforma_nombre || ''}
                 </span>
               </td>
-              <td class="py-3 px-4 text-slate-700">${t.agente_nombre || 'NA'}</td>
               <td class="py-3 px-4">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-montserrat font-bold badge-status-${t.estado.toLowerCase().replace(/\s+/g, '-')}">
                   ${t.estado}

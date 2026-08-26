@@ -44,24 +44,11 @@ export interface Platform {
   casos_alta_prioridad?: number;
 }
 
-export interface Agent {
-  id: number;
-  nombre: string;
-  email?: string;
-  telefono?: string;
-  especialidad?: string;
-  estado: EstadoEntidad;
-  fecha_creacion: string;
-  total_casos?: number;
-  casos_abiertos?: number;
-  casos_cerrados?: number;
-}
-
 export interface TicketHistory {
   id: number;
   ticket_id: number;
   usuario_nombre: string;
-  accion: 'CREACION' | 'CAMBIO_ESTADO' | 'CAMBIO_AGENTE' | 'EDICION' | 'COMENTARIO' | 'CAMBIO_PRIORIDAD';
+  accion: 'CREACION' | 'CAMBIO_ESTADO' | 'EDICION' | 'COMENTARIO' | 'CAMBIO_PRIORIDAD';
   descripcion: string;
   valor_anterior?: string;
   valor_nuevo?: string;
@@ -86,9 +73,6 @@ export interface Ticket {
   fecha_creacion: string;
   servicenow?: string;
   turno: TurnoTicket;
-  agente_id: number;
-  agente_nombre?: string;
-  agente_email?: string;
   estado: EstadoTicket;
   fecha_actualizacion: string;
   fecha_cierre?: string;
@@ -103,7 +87,6 @@ export interface TicketFilters {
   prioridad?: string;
   cliente_id?: string;
   plataforma_id?: string;
-  agente_id?: string;
   turno?: string;
   estado?: string;
   fecha_desde?: string;
@@ -136,7 +119,6 @@ export interface ChartDataResponse {
   by_platform: Array<{ nombre: string; color_badge: string; cantidad: number }>;
   by_priority: Array<{ prioridad: string; cantidad: number }>;
   by_status: Array<{ estado: string; cantidad: number }>;
-  by_agent: Array<{ nombre: string; cantidad: number }>;
   by_client: Array<{ nombre: string; cantidad: number }>;
   trend: Array<{ fecha: string; total: number; cerrados: number }>;
 }

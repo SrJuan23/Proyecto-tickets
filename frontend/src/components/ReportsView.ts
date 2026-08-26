@@ -1,5 +1,5 @@
 import { api } from '../services/api';
-import { TicketFilters, Client, Platform, Agent } from '../types';
+import { TicketFilters, Client, Platform } from '../types';
 
 export class ReportsView {
   private container: HTMLElement;
@@ -7,7 +7,6 @@ export class ReportsView {
     prioridad: '',
     cliente_id: '',
     plataforma_id: '',
-    agente_id: '',
     turno: '',
     estado: '',
     fecha_desde: '',
@@ -16,7 +15,6 @@ export class ReportsView {
 
   private clientsList: Client[] = [];
   private platformsList: Platform[] = [];
-  private agentsList: Agent[] = [];
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -54,13 +52,6 @@ export class ReportsView {
               <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">Plataforma</label>
               <select id="report-platform" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none">
                 <option value="">Todas las plataformas</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">Agente de Soporte</label>
-              <select id="report-agent" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none">
-                <option value="">Todos los agentes</option>
               </select>
             </div>
 
@@ -172,10 +163,9 @@ export class ReportsView {
 
   private async loadSelectOptions(): Promise<void> {
     try {
-      const [cRes, pRes, aRes] = await Promise.all([api.getClients(), api.getPlatforms(), api.getAgents()]);
+      const [cRes, pRes] = await Promise.all([api.getClients(), api.getPlatforms()]);
       if (cRes.data) this.clientsList = cRes.data;
       if (pRes.data) this.platformsList = pRes.data;
-      if (aRes.data) this.agentsList = aRes.data;
 
       const cSel = this.container.querySelector('#report-client') as HTMLSelectElement;
       this.clientsList.forEach((c) => {
@@ -190,15 +180,7 @@ export class ReportsView {
         const opt = document.createElement('option');
         opt.value = String(p.id);
         opt.text = p.nombre;
-        pSel.appendChild(opt);
-      });
-
-      const aSel = this.container.querySelector('#report-agent') as HTMLSelectElement;
-      this.agentsList.forEach((a) => {
-        const opt = document.createElement('option');
-        opt.value = String(a.id);
-        opt.text = a.nombre;
-        aSel.appendChild(opt);
+      pSel.appendChild(opt);
       });
     } catch (e) {
       console.error(e);
@@ -217,7 +199,6 @@ export class ReportsView {
     const handleChange = () => {
       this.filters.cliente_id = (this.container.querySelector('#report-client') as HTMLSelectElement)?.value;
       this.filters.plataforma_id = (this.container.querySelector('#report-platform') as HTMLSelectElement)?.value;
-      this.filters.agente_id = (this.container.querySelector('#report-agent') as HTMLSelectElement)?.value;
       this.filters.estado = (this.container.querySelector('#report-status') as HTMLSelectElement)?.value;
       this.filters.prioridad = (this.container.querySelector('#report-priority') as HTMLSelectElement)?.value;
       this.filters.turno = (this.container.querySelector('#report-shift') as HTMLSelectElement)?.value;
