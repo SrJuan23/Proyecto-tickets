@@ -14,6 +14,8 @@ export interface Usuario {
   rol: RolUsuario;
   estado: EstadoEntidad;
   avatar_url?: string;
+  telefono?: string;
+  especialidad?: string;
   fecha_creacion: string;
 }
 
@@ -26,7 +28,6 @@ export interface Cliente {
   telefono?: string;
   estado: EstadoEntidad;
   fecha_creacion: string;
-  // Campos calculados
   total_casos?: number;
   casos_abiertos?: number;
   casos_en_proceso?: number;
@@ -40,7 +41,6 @@ export interface Plataforma {
   color_badge?: string;
   estado: EstadoEntidad;
   fecha_creacion: string;
-  // Campos calculados
   total_casos?: number;
   casos_abiertos?: number;
   casos_cerrados?: number;
@@ -62,6 +62,9 @@ export interface Ticket {
   fecha_creacion: string;
   servicenow?: string;
   turno: TurnoTicket;
+  agente_id: number;
+  agente_nombre?: string;
+  agente_email?: string;
   estado: EstadoTicket;
   fecha_actualizacion: string;
   fecha_cierre?: string;
@@ -73,7 +76,7 @@ export interface HistorialTicket {
   id: number;
   ticket_id: number;
   usuario_nombre: string;
-  accion: 'CREACION' | 'CAMBIO_ESTADO' | 'EDICION' | 'COMENTARIO' | 'CAMBIO_PRIORIDAD';
+  accion: 'CREACION' | 'CAMBIO_ESTADO' | 'CAMBIO_AGENTE' | 'EDICION' | 'COMENTARIO' | 'CAMBIO_PRIORIDAD';
   descripcion: string;
   valor_anterior?: string;
   valor_nuevo?: string;
@@ -92,6 +95,7 @@ export interface FiltrosTickets {
   prioridad?: string;
   cliente_id?: number | string;
   plataforma_id?: number | string;
+  agente_id?: number | string;
   turno?: string;
   estado?: string;
   fecha_desde?: string;

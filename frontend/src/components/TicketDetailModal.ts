@@ -167,6 +167,13 @@ export class TicketDetailModal {
           </div>
 
           <div>
+            <span class="text-slate-400 block text-[11px]">Agente de Atención:</span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200 mt-1">
+              ${ticket.agente_nombre || '-'}
+            </span>
+          </div>
+
+          <div>
             <span class="text-slate-400 block text-[11px]">ServiceNow ID:</span>
             ${
               ticket.servicenow

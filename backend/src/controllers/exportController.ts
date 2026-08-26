@@ -22,6 +22,7 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
     prioridad,
     cliente_id,
     plataforma_id,
+    agente_id,
     turno,
     estado,
     fecha_desde,
@@ -45,9 +46,10 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
       t.descripcion LIKE ? OR
       t.solicitante LIKE ? OR
       t.servicenow LIKE ? OR
-      p.nombre LIKE ?
+      p.nombre LIKE ? OR
+      u.nombre LIKE ?
     )`);
-    params.push(term, term, term, term, term, term, term);
+    params.push(term, term, term, term, term, term, term, term);
   }
 
   if (prioridad && typeof prioridad === 'string' && prioridad.trim() !== '') {
@@ -63,6 +65,11 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
   if (plataforma_id && plataforma_id !== '' && plataforma_id !== 'all') {
     conditions.push('t.plataforma_id = ?');
     params.push(Number(plataforma_id));
+  }
+
+  if (agente_id && agente_id !== '' && agente_id !== 'all') {
+    conditions.push('t.agente_id = ?');
+    params.push(Number(agente_id));
   }
 
   if (turno && typeof turno === 'string' && turno.trim() !== '' && turno !== 'all') {
@@ -99,6 +106,7 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
       t.fecha_creacion,
       t.servicenow,
       t.turno,
+      u.nombre AS agente_nombre,
       t.estado,
       t.fecha_actualizacion,
       t.fecha_cierre,
@@ -106,6 +114,7 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
     FROM tickets t
     JOIN clientes c ON t.cliente_id = c.id
     JOIN plataformas p ON t.plataforma_id = p.id
+    LEFT JOIN usuarios u ON t.agente_id = u.id
     WHERE ${whereClause}
     ORDER BY t.id DESC
   `;
@@ -125,7 +134,7 @@ export async function exportExcel(req: Request, res: Response): Promise<void> {
       views: [{ state: 'frozen', ySplit: 4 }]
     });
 
-    worksheet.mergeCells('A1:K1');
+    worksheet.mergeCells('A1:L1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'MESA DE AYUDA Y GESTIÓN DE CASOS - REPORTE DETALLADO';
     titleCell.font = { name: 'Montserrat', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -137,7 +146,7 @@ export async function exportExcel(req: Request, res: Response): Promise<void> {
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
     worksheet.getRow(1).height = 32;
 
-    worksheet.mergeCells('A2:K2');
+    worksheet.mergeCells('A2:L2');
     const subCell = worksheet.getCell('A2');
     const todayStr = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
     subCell.value = `Generado el: ${todayStr} | Total registros exportados: ${rawTickets.length}`;
@@ -157,6 +166,7 @@ export async function exportExcel(req: Request, res: Response): Promise<void> {
       { header: 'Fecha Creación', key: 'fecha_creacion', width: 20 },
       { header: 'ServiceNow', key: 'servicenow', width: 18 },
       { header: 'Turno', key: 'turno', width: 10 },
+      { header: 'Atendido por', key: 'agente_nombre', width: 24 },
       { header: 'Estado', key: 'estado', width: 16 },
       { header: 'Tiempo Atención', key: 'tiempo_atencion', width: 18 }
     ];
@@ -164,7 +174,7 @@ export async function exportExcel(req: Request, res: Response): Promise<void> {
     const headerRow = worksheet.getRow(4);
     headerRow.values = [
       'ID', 'Prioridad', 'Cliente', 'Asunto', 'Plataforma', 'Solicitante',
-      'Fecha Creación', 'ServiceNow', 'Turno', 'Estado', 'Tiempo Atención'
+      'Fecha Creación', 'ServiceNow', 'Turno', 'Atendido por', 'Estado', 'Tiempo Atención'
     ];
     headerRow.height = 26;
 
@@ -195,6 +205,7 @@ export async function exportExcel(req: Request, res: Response): Promise<void> {
         fecha_creacion: ticket.fecha_creacion,
         servicenow: ticket.servicenow || 'N/A',
         turno: ticket.turno,
+        agente_nombre: ticket.agente_nombre,
         estado: ticket.estado,
         tiempo_atencion: formatDuration(ticket.tiempo_atencion_minutos)
       });
@@ -204,7 +215,7 @@ export async function exportExcel(req: Request, res: Response): Promise<void> {
 
       row.eachCell((cell, colNumber) => {
         cell.font = { name: 'Lato', size: 10 };
-        cell.alignment = { vertical: 'middle', horizontal: colNumber === 1 || colNumber === 2 || colNumber === 9 || colNumber === 10 ? 'center' : 'left' };
+        cell.alignment = { vertical: 'middle', horizontal: colNumber === 1 || colNumber === 2 || colNumber === 8 || colNumber === 9 || colNumber === 11 ? 'center' : 'left' };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -244,6 +255,7 @@ export async function exportCsv(req: Request, res: Response): Promise<void> {
       'Fecha Creación',
       'ServiceNow',
       'Turno',
+      'Atendido por',
       'Estado',
       'Fecha Actualización',
       'Fecha Cierre',
@@ -267,6 +279,7 @@ export async function exportCsv(req: Request, res: Response): Promise<void> {
         t.fecha_creacion,
         t.servicenow || '',
         t.turno,
+        `"${t.agente_nombre}"`,
         t.estado,
         t.fecha_actualizacion || '',
         t.fecha_cierre || '',

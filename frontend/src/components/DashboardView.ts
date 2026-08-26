@@ -125,6 +125,20 @@ export class DashboardView {
             </div>
           </div>
 
+          <!-- 5. Casos por Agente -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-montserrat font-bold text-slate-800 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-cyan"></span>
+                Casos por Agente
+              </h3>
+              <span class="text-[11px] font-lato text-slate-400">Atención</span>
+            </div>
+            <div class="relative flex-1 min-h-[220px]">
+              <canvas id="chart-agent"></canvas>
+            </div>
+          </div>
+
           <!-- 6. Evolución Temporal -->
           <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card flex flex-col lg:col-span-3">
             <div class="flex items-center justify-between mb-4">
@@ -393,6 +407,32 @@ export class DashboardView {
       });
     }
 
+    // 5. Chart Agent (Bar)
+    const ctxAgent = (this.container.querySelector('#chart-agent') as HTMLCanvasElement)?.getContext('2d');
+    if (ctxAgent && data.by_agent) {
+      this.chartInstances['agent'] = new Chart(ctxAgent, {
+        type: 'bar',
+        data: {
+          labels: data.by_agent.map((a) => a.nombre.length > 15 ? a.nombre.slice(0, 15) + '...' : a.nombre),
+          datasets: [{
+            label: 'Casos',
+            data: data.by_agent.map((a) => a.cantidad),
+            backgroundColor: '#00CDE2',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1, font: { family: 'Lato' } } },
+            x: { grid: { display: false }, ticks: { font: { family: 'Lato', size: 10 } } }
+          }
+        }
+      });
+    }
+
     // 6. Chart Trend (Line / Area)
     const ctxTrend = (this.container.querySelector('#chart-trend') as HTMLCanvasElement)?.getContext('2d');
     if (ctxTrend) {
@@ -464,6 +504,7 @@ export class DashboardView {
             <th class="py-3 px-4">Cliente</th>
             <th class="py-3 px-4">Asunto</th>
             <th class="py-3 px-4">Plataforma</th>
+            <th class="py-3 px-4">Atendido por</th>
             <th class="py-3 px-4">Estado</th>
             <th class="py-3 px-4 text-right">Acción</th>
           </tr>
@@ -483,12 +524,15 @@ export class DashboardView {
               </td>
               <td class="py-3 px-4 font-semibold text-slate-800">${t.cliente_nombre || ''}</td>
               <td class="py-3 px-4 text-slate-600 max-w-xs truncate">${t.asunto}</td>
-              <td class="py-3 px-4">
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
-                  ${t.plataforma_nombre || ''}
-                </span>
-              </td>
-              <td class="py-3 px-4">
+               <td class="py-3 px-4">
+                 <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700">
+                   ${t.plataforma_nombre || ''}
+                 </span>
+               </td>
+               <td class="py-3 px-4 text-slate-700 font-medium">
+                 ${t.agente_nombre || '-'}
+               </td>
+               <td class="py-3 px-4">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-montserrat font-bold badge-status-${t.estado.toLowerCase().replace(/\s+/g, '-')}">
                   ${t.estado}
                 </span>

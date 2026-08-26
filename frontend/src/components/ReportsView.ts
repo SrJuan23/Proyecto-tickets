@@ -1,5 +1,5 @@
 import { api } from '../services/api';
-import { TicketFilters, Client, Platform } from '../types';
+import { TicketFilters, Client, Platform, User } from '../types';
 
 export class ReportsView {
   private container: HTMLElement;
@@ -15,6 +15,7 @@ export class ReportsView {
 
   private clientsList: Client[] = [];
   private platformsList: Platform[] = [];
+  private agentsList: User[] = [];
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -92,6 +93,13 @@ export class ReportsView {
             </div>
 
             <div>
+              <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">Agente</label>
+              <select id="report-agent" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none">
+                <option value="">Todos los agentes</option>
+              </select>
+            </div>
+
+            <div>
               <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">Fecha Desde</label>
               <input type="date" id="report-from" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" />
             </div>
@@ -163,9 +171,10 @@ export class ReportsView {
 
   private async loadSelectOptions(): Promise<void> {
     try {
-      const [cRes, pRes] = await Promise.all([api.getClients(), api.getPlatforms()]);
+      const [cRes, pRes, aRes] = await Promise.all([api.getClients(), api.getPlatforms(), api.getAgents()]);
       if (cRes.data) this.clientsList = cRes.data;
       if (pRes.data) this.platformsList = pRes.data;
+      if (aRes.data) this.agentsList = aRes.data;
 
       const cSel = this.container.querySelector('#report-client') as HTMLSelectElement;
       this.clientsList.forEach((c) => {
@@ -181,6 +190,14 @@ export class ReportsView {
         opt.value = String(p.id);
         opt.text = p.nombre;
       pSel.appendChild(opt);
+      });
+
+      const aSel = this.container.querySelector('#report-agent') as HTMLSelectElement;
+      this.agentsList.forEach((a) => {
+        const opt = document.createElement('option');
+        opt.value = String(a.id);
+        opt.text = a.nombre;
+        aSel.appendChild(opt);
       });
     } catch (e) {
       console.error(e);
@@ -202,6 +219,7 @@ export class ReportsView {
       this.filters.estado = (this.container.querySelector('#report-status') as HTMLSelectElement)?.value;
       this.filters.prioridad = (this.container.querySelector('#report-priority') as HTMLSelectElement)?.value;
       this.filters.turno = (this.container.querySelector('#report-shift') as HTMLSelectElement)?.value;
+      this.filters.agente_id = (this.container.querySelector('#report-agent') as HTMLSelectElement)?.value;
       this.filters.fecha_desde = (this.container.querySelector('#report-from') as HTMLInputElement)?.value;
       this.filters.fecha_hasta = (this.container.querySelector('#report-to') as HTMLInputElement)?.value;
       this.updateExportLinks();

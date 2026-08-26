@@ -1,24 +1,27 @@
 import { api } from '../services/api';
 import { toast } from '../services/toast';
-import { Ticket, Client, Platform, PrioridadTicket, EstadoTicket, TurnoTicket } from '../types';
+import { Ticket, Client, Platform, User, PrioridadTicket, EstadoTicket, TurnoTicket } from '../types';
 
 export class TicketModal {
   private ticket: Ticket | null = null;
   private isEdit: boolean = false;
   private clients: Client[] = [];
   private platforms: Platform[] = [];
+  private agents: User[] = [];
   private onSuccess: () => void;
 
   constructor(options: {
     ticket?: Ticket | null;
     clients: Client[];
     platforms: Platform[];
+    agents: User[];
     onSuccess: () => void;
   }) {
     this.ticket = options.ticket || null;
     this.isEdit = !!options.ticket;
     this.clients = options.clients.filter((c) => c.estado === 'ACTIVO');
     this.platforms = options.platforms.filter((p) => p.estado === 'ACTIVO');
+    this.agents = options.agents || [];
     this.onSuccess = options.onSuccess;
   }
 
@@ -172,17 +175,30 @@ export class TicketModal {
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <!-- Turno -->
-              <div>
-                <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">
-                  Turno Atendido <span class="text-rose-500">*</span>
-                </label>
-                <select name="turno" id="form-turno" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-lato focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary focus:bg-white focus:outline-none" required>
-                  ${['NA', 'T1', 'T2', 'T4', 'TD', 'TN'].map((t) => `
-                    <option value="${t}" ${this.ticket?.turno === t ? 'selected' : ''}>${t}</option>
-                  `).join('')}
-                </select>
-              </div>
+               <!-- Turno -->
+               <div>
+                 <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">
+                   Turno Atendido <span class="text-rose-500">*</span>
+                 </label>
+                 <select name="turno" id="form-turno" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-lato focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary focus:bg-white focus:outline-none" required>
+                   ${['NA', 'T1', 'T2', 'T4', 'TD', 'TN'].map((t) => `
+                     <option value="${t}" ${this.ticket?.turno === t ? 'selected' : ''}>${t}</option>
+                   `).join('')}
+                 </select>
+               </div>
+
+               <!-- Agente -->
+               <div>
+                 <label class="block font-montserrat font-semibold text-slate-700 mb-1.5">
+                   Agente de Atención <span class="text-rose-500">*</span>
+                 </label>
+                 <select name="agente_id" id="form-agente" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-lato focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary focus:bg-white focus:outline-none" required>
+                   <option value="">Seleccione un agente...</option>
+                   ${this.agents.map((a) => `
+                     <option value="${a.id}" ${this.ticket?.agente_id === a.id ? 'selected' : ''}>${a.nombre}</option>
+                   `).join('')}
+                 </select>
+               </div>
 
               <!-- Estado -->
               <div>
@@ -289,6 +305,7 @@ export class TicketModal {
           asunto: formData.get('asunto'),
           descripcion: formData.get('descripcion'),
           turno: formData.get('turno'),
+          agente_id: Number(formData.get('agente_id')),
           estado: formData.get('estado'),
           servicenow: formData.get('servicenow') || null,
           fecha_creacion: formData.get('fecha_creacion') ? String(formData.get('fecha_creacion')).replace('T', ' ') + ':00' : undefined

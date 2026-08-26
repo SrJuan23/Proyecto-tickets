@@ -30,6 +30,7 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
       prioridad,
       cliente_id,
       plataforma_id,
+      agente_id,
       turno,
       estado,
       fecha_desde,
@@ -55,9 +56,10 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
         t.descripcion LIKE ? OR
         t.solicitante LIKE ? OR
         t.servicenow LIKE ? OR
-        p.nombre LIKE ?
+        p.nombre LIKE ? OR
+        u.nombre LIKE ?
       )`);
-      params.push(term, term, term, term, term, term, term);
+      params.push(term, term, term, term, term, term, term, term);
     }
 
     if (prioridad && typeof prioridad === 'string' && prioridad.trim() !== '') {
@@ -73,6 +75,11 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
     if (plataforma_id && plataforma_id !== '' && plataforma_id !== 'all') {
       conditions.push('t.plataforma_id = ?');
       params.push(Number(plataforma_id));
+    }
+
+    if (agente_id && agente_id !== '' && agente_id !== 'all') {
+      conditions.push('t.agente_id = ?');
+      params.push(Number(agente_id));
     }
 
     if (turno && typeof turno === 'string' && turno.trim() !== '' && turno !== 'all') {
@@ -102,6 +109,7 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
       FROM tickets t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN plataformas p ON t.plataforma_id = p.id
+      LEFT JOIN usuarios u ON t.agente_id = u.id
       WHERE ${whereClause}
     `;
     const countRes = await db.get(countSql, params);
@@ -117,6 +125,7 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
       'fecha_creacion': 't.fecha_creacion',
       'servicenow': 't.servicenow',
       'turno': 't.turno',
+      'agente': 'u.nombre',
       'estado': 't.estado'
     };
 
@@ -129,7 +138,7 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
     const offset = (pageNum - 1) * limitNum;
 
     const listSql = `
-      SELECT
+      SELECT 
         t.id,
         t.prioridad,
         t.cliente_id,
@@ -143,6 +152,9 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
         t.fecha_creacion,
         t.servicenow,
         t.turno,
+        t.agente_id,
+        u.nombre AS agente_nombre,
+        u.email AS agente_email,
         t.estado,
         t.fecha_actualizacion,
         t.fecha_cierre,
@@ -150,6 +162,7 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
       FROM tickets t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN plataformas p ON t.plataforma_id = p.id
+      LEFT JOIN usuarios u ON t.agente_id = u.id
       WHERE ${whereClause}
       ORDER BY ${resolvedSortBy} ${resolvedDirection}
       LIMIT ${limitNum} OFFSET ${offset}
@@ -183,7 +196,7 @@ export async function getTicketById(req: Request, res: Response): Promise<void> 
     const { id } = req.params;
 
     const sql = `
-      SELECT
+      SELECT 
         t.id,
         t.prioridad,
         t.cliente_id,
@@ -201,6 +214,9 @@ export async function getTicketById(req: Request, res: Response): Promise<void> 
         t.fecha_creacion,
         t.servicenow,
         t.turno,
+        t.agente_id,
+        u.nombre AS agente_nombre,
+        u.email AS agente_email,
         t.estado,
         t.fecha_actualizacion,
         t.fecha_cierre,
@@ -208,6 +224,7 @@ export async function getTicketById(req: Request, res: Response): Promise<void> 
       FROM tickets t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN plataformas p ON t.plataforma_id = p.id
+      LEFT JOIN usuarios u ON t.agente_id = u.id
       WHERE t.id = ?
     `;
 
@@ -256,6 +273,7 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
       fecha_creacion,
       servicenow,
       turno = 'NA',
+      agente_id,
       estado = 'ABIERTO'
     } = req.body;
 
@@ -279,6 +297,10 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
       res.status(400).json({ success: false, message: 'El nombre del solicitante es obligatorio.' });
       return;
     }
+    if (agente_id === undefined || agente_id === '') {
+      res.status(400).json({ success: false, message: 'Debe asignar un agente de atención o seleccionar NA.' });
+      return;
+    }
 
     const creationDate = (fecha_creacion && typeof fecha_creacion === 'string' && fecha_creacion.trim())
       ? fecha_creacion.trim()
@@ -289,9 +311,9 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
     const attentionMins = isClosed ? 0 : null;
 
     const result = await db.run(
-      `INSERT INTO tickets
-        (prioridad, cliente_id, asunto, descripcion, plataforma_id, solicitante, fecha_creacion, servicenow, turno, estado, fecha_actualizacion, fecha_cierre, tiempo_atencion_minutos)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tickets 
+        (prioridad, cliente_id, asunto, descripcion, plataforma_id, solicitante, fecha_creacion, servicenow, turno, agente_id, estado, fecha_actualizacion, fecha_cierre, tiempo_atencion_minutos)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         prioridad,
         cliente_id,
@@ -302,6 +324,7 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
         creationDate,
         servicenow ? servicenow.trim() : null,
         turno || 'NA',
+        agente_id,
         estado || 'ABIERTO',
         creationDate,
         closeDate,
@@ -348,6 +371,7 @@ export async function updateTicket(req: AuthenticatedRequest, res: Response): Pr
       solicitante,
       servicenow,
       turno,
+      agente_id,
       estado,
       fecha_creacion
     } = req.body;
@@ -380,6 +404,7 @@ export async function updateTicket(req: AuthenticatedRequest, res: Response): Pr
     const updatedSolicitante = solicitante !== undefined ? solicitante.trim() : existing.solicitante;
     const updatedServiceNow = servicenow !== undefined ? (servicenow ? servicenow.trim() : null) : existing.servicenow;
     const updatedTurno = turno || existing.turno;
+    const updatedAgenteId = agente_id !== undefined ? agente_id : existing.agente_id;
     const updatedEstado = estado || existing.estado;
     const updatedFechaCreacion = (req.user?.rol === 'ADMIN' && fecha_creacion) ? fecha_creacion : existing.fecha_creacion;
 
@@ -393,6 +418,7 @@ export async function updateTicket(req: AuthenticatedRequest, res: Response): Pr
         solicitante = ?,
         servicenow = ?,
         turno = ?,
+        agente_id = ?,
         estado = ?,
         fecha_creacion = ?,
         fecha_actualizacion = ?,
@@ -408,6 +434,7 @@ export async function updateTicket(req: AuthenticatedRequest, res: Response): Pr
         updatedSolicitante,
         updatedServiceNow,
         updatedTurno,
+        updatedAgenteId,
         updatedEstado,
         updatedFechaCreacion,
         now,
@@ -422,6 +449,15 @@ export async function updateTicket(req: AuthenticatedRequest, res: Response): Pr
         `INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, valor_anterior, valor_nuevo, fecha)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [id, actorName, 'CAMBIO_ESTADO', `Estado cambiado de ${existing.estado} a ${updatedEstado}`, existing.estado, updatedEstado, now]
+      );
+    }
+
+    if (existing.agente_id !== updatedAgenteId) {
+      const newAgent = await db.get('SELECT nombre FROM usuarios WHERE id = ?', [updatedAgenteId]);
+      await db.run(
+        `INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, valor_anterior, valor_nuevo, fecha)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, actorName, 'CAMBIO_AGENTE', `Caso reasignado a ${newAgent?.nombre || 'Nuevo Agente'}`, String(existing.agente_id), String(updatedAgenteId), now]
       );
     }
 

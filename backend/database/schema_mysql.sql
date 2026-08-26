@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   servicenow VARCHAR(50) NULL,
   turno ENUM('NA', 'T1', 'T2', 'T4', 'TD', 'TN') NOT NULL DEFAULT 'NA',
+  agente_id INT NULL,
   estado ENUM('ABIERTO', 'EN PROCESO', 'PENDIENTE', 'RESUELTO', 'CERRADO') NOT NULL DEFAULT 'ABIERTO',
   fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   fecha_cierre DATETIME NULL,
@@ -61,11 +62,13 @@ CREATE TABLE IF NOT EXISTS tickets (
   INDEX idx_prioridad (prioridad),
   INDEX idx_cliente (cliente_id),
   INDEX idx_plataforma (plataforma_id),
+  INDEX idx_agente (agente_id),
   INDEX idx_turno (turno),
   INDEX idx_fecha_creacion (fecha_creacion),
   INDEX idx_servicenow (servicenow),
   CONSTRAINT fk_ticket_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON UPDATE CASCADE,
-  CONSTRAINT fk_ticket_plataforma FOREIGN KEY (plataforma_id) REFERENCES plataformas(id) ON UPDATE CASCADE
+  CONSTRAINT fk_ticket_plataforma FOREIGN KEY (plataforma_id) REFERENCES plataformas(id) ON UPDATE CASCADE,
+  CONSTRAINT fk_ticket_agente FOREIGN KEY (agente_id) REFERENCES usuarios(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- 5. Tabla: historial_ticket

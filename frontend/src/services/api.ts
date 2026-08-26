@@ -219,6 +219,13 @@ class ApiService {
     });
   }
 
+  async getAgents(search?: string, estado?: string) {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (estado) params.append('estado', estado);
+    return this.request<User[]>(`/agentes?${params.toString()}`);
+  }
+
   async getKPIs() {
     return this.request<DashboardKPIs>('/stats/kpis');
   }

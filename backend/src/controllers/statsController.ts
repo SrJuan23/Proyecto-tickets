@@ -5,7 +5,7 @@ import { logger } from '../services/logger';
 export async function getKPIs(req: Request, res: Response): Promise<void> {
   try {
     const sql = `
-      SELECT
+      SELECT 
         COUNT(*) as total_casos,
         SUM(CASE WHEN estado = 'ABIERTO' THEN 1 ELSE 0 END) as casos_abiertos,
         SUM(CASE WHEN estado = 'EN PROCESO' THEN 1 ELSE 0 END) as casos_en_proceso,
@@ -98,6 +98,16 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byStatus = await db.query(statSql, params);
 
+    const agentSql = `
+      SELECT u.nombre, COUNT(t.id) as cantidad
+      FROM usuarios u
+      LEFT JOIN tickets t ON u.id = t.agente_id AND ${whereClause}
+      WHERE u.rol = 'AGENTE'
+      GROUP BY u.id
+      ORDER BY cantidad DESC
+    `;
+    const byAgent = await db.query(agentSql, params);
+
     const clientSql = `
       SELECT c.nombre, COUNT(t.id) as cantidad
       FROM clientes c
@@ -128,6 +138,7 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
         by_platform: byPlatform,
         by_priority: byPriority,
         by_status: byStatus,
+        by_agent: byAgent,
         by_client: byClient,
         trend
       }

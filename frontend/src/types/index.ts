@@ -16,6 +16,12 @@ export interface User {
   fecha_creacion: string;
 }
 
+export interface Agent extends User {
+  total_casos?: number;
+  casos_abiertos?: number;
+  casos_cerrados?: number;
+}
+
 export interface Client {
   id: number;
   nombre: string;
@@ -73,6 +79,9 @@ export interface Ticket {
   fecha_creacion: string;
   servicenow?: string;
   turno: TurnoTicket;
+  agente_id: number;
+  agente_nombre?: string;
+  agente_email?: string;
   estado: EstadoTicket;
   fecha_actualizacion: string;
   fecha_cierre?: string;
@@ -87,6 +96,7 @@ export interface TicketFilters {
   prioridad?: string;
   cliente_id?: string;
   plataforma_id?: string;
+  agente_id?: string;
   turno?: string;
   estado?: string;
   fecha_desde?: string;
@@ -119,6 +129,7 @@ export interface ChartDataResponse {
   by_platform: Array<{ nombre: string; color_badge: string; cantidad: number }>;
   by_priority: Array<{ prioridad: string; cantidad: number }>;
   by_status: Array<{ estado: string; cantidad: number }>;
+  by_agent: Array<{ nombre: string; cantidad: number }>;
   by_client: Array<{ nombre: string; cantidad: number }>;
   trend: Array<{ fecha: string; total: number; cerrados: number }>;
 }
