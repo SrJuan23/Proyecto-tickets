@@ -151,6 +151,7 @@ class DatabaseService {
     `;
         await this.pgPool.query(schemaSql);
         console.log('[DB] Schema PostgreSQL inicializado correctamente');
+        await this.migrateUsuariosTelefonoEspecialidadPostgres();
     }
     initSqliteSchema() {
         const schemaSql = `
@@ -263,6 +264,18 @@ class DatabaseService {
         }
         catch (err) {
             console.error('[DB] Error en migracion de telefono/especialidad en usuarios:', err);
+        }
+    }
+    async migrateUsuariosTelefonoEspecialidadPostgres() {
+        try {
+            if (!this.pgPool)
+                return;
+            await this.pgPool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefono VARCHAR(50) NULL;`);
+            await this.pgPool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS especialidad VARCHAR(100) NULL;`);
+            console.log('[DB] Migracion PostgreSQL aplicada: telefono y especialidad en usuarios.');
+        }
+        catch (err) {
+            console.error('[DB] Error en migracion PostgreSQL de telefono/especialidad:', err);
         }
     }
     migrateTicketsAgenteNullable() {
