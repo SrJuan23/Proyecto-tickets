@@ -26,8 +26,8 @@ export class LoginModal {
           <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-cyan text-white flex items-center justify-center mx-auto mb-3 shadow-brand">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           </div>
-          <h2 class="text-xl font-montserrat font-bold tracking-tight">Support Desk</h2>
-          <p class="text-xs font-lato text-slate-300 mt-0.5">Ingreso seguro a la plataforma de gestión de casos</p>
+          <h2 class="text-xl font-montserrat font-bold tracking-tight">Huella de soporte</h2>
+          <p class="text-xs font-lato text-slate-300 mt-0.5">Registro de casos</p>
         </div>
 
         <div class="p-6 space-y-5">

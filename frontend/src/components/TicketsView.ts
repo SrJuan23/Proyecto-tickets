@@ -65,7 +65,7 @@ export class TicketsView {
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card">
           <div>
             <div class="flex items-center gap-3">
-              <h1 class="text-2xl font-montserrat font-bold text-brand-dark tracking-tight">Registro de Casos</h1>
+              <h1 class="text-2xl font-montserrat font-bold text-brand-dark tracking-tight">Registro de casos</h1>
               <span id="ticket-total-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-primary-light text-brand-primary">
                 ${this.pagination.total} casos
               </span>

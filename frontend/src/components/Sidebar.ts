@@ -64,8 +64,8 @@ export class Sidebar {
           ${
             !this.isCollapsed
               ? `<div class="flex flex-col min-w-0">
-                  <span class="font-montserrat font-bold text-base text-white tracking-tight truncate leading-tight">Support Desk</span>
-                  <span class="text-[11px] font-lato text-brand-cyan tracking-wider uppercase font-semibold">Gestión de Casos</span>
+                  <span class="font-montserrat font-bold text-base text-white tracking-tight truncate leading-tight">Huella de soporte</span>
+                  <span class="text-[11px] font-lato text-brand-cyan tracking-wider uppercase font-semibold">Registro de casos</span>
                 </div>`
               : ''
           }
