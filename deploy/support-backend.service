@@ -1,0 +1,25 @@
+[Unit]
+Description=Huella de soporte - Backend API
+After=network.target
+
+[Service]
+Type=simple
+User=support
+Group=support
+WorkingDirectory=/opt/support-desk/backend
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/support-desk/backend/.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Seguridad básica
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

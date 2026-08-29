@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts"
+    "dev": "ts-node src/server.ts",
+    "deploy": "bash ../deploy/deploy.sh main"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
