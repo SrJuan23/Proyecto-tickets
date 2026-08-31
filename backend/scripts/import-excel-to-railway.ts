@@ -1,8 +1,11 @@
 import { Pool } from 'pg';
 import * as XLSX from 'xlsx';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:saBDDyaZXIJqDNUSRdonDVzlbRgOjKzC@altaria.proxy.rlwy.net:32705/railway';
+dotenv.config();
+
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://support:support@localhost:5432/support_desk';
 const EXCEL_PATH = process.argv[2] || '';
 const SHEET_NAME = 'BITACORA N1 2025';
 
@@ -32,30 +35,12 @@ async function ensurePlataforma(nombre: string): Promise<number> {
   return inserted.rows[0].id;
 }
 
-async function ensureAgente(nombre: string, hasAgentsTable: boolean): Promise<number> {
+async function ensureAgente(nombre: string): Promise<number> {
   const trimmed = nombre.trim();
   if (!trimmed || trimmed === 'NA') return 0;
 
   const emailPlaceholder = `agente.${trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '.')}@supportdesk.local`;
   const passwordHash = await bcrypt.hash('changeme', 10);
-
-  if (hasAgentsTable) {
-    const found = await pool.query('SELECT id FROM agentes WHERE LOWER(nombre)=LOWER($1)', [trimmed]);
-    if (found.rows[0]) return found.rows[0].id;
-
-    const inserted = await pool.query(
-      'INSERT INTO agentes (nombre, email, telefono, especialidad, estado) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-      [trimmed, emailPlaceholder, null, null, 'ACTIVO']
-    );
-    const agentesId = inserted.rows[0].id;
-
-    await pool.query(
-      'INSERT INTO usuarios (id, nombre, email, password_hash, rol, estado) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING',
-      [agentesId, trimmed, emailPlaceholder, passwordHash, 'AGENTE', 'ACTIVO']
-    );
-
-    return agentesId;
-  }
 
   const found = await pool.query('SELECT id FROM usuarios WHERE LOWER(nombre)=LOWER($1) AND rol=$2', [trimmed, 'AGENTE']);
   if (found.rows[0]) return found.rows[0].id;
@@ -109,9 +94,6 @@ async function run() {
   let imported = 0;
   let skipped = 0;
 
-  const agentsTableCheck = await pool.query("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agentes')");
-  const hasAgentsTable = agentsTableCheck.rows[0]?.exists;
-
   for (const row of dataRows) {
     const get = (name: string) => row[headers.indexOf(name)];
 
@@ -131,7 +113,7 @@ async function run() {
     const atendidoPor = String(get('Atendido por') || '').trim();
     let agenteId: number | null = null;
     if (atendidoPor && atendidoPor !== 'NA') {
-      agenteId = await ensureAgente(atendidoPor, hasAgentsTable);
+      agenteId = await ensureAgente(atendidoPor);
     }
 
     await pool.query(

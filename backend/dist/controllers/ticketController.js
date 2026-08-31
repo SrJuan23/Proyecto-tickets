@@ -31,11 +31,9 @@ function calculateMinutesDiff(startStr, endStr) {
 async function getTickets(req, res) {
     try {
         const { search, prioridad, cliente_id, plataforma_id, agente_id, turno, estado, fecha_desde, fecha_hasta, sort_by = 't.id', sort_direction = 'DESC', page = 1, limit = 25 } = req.query;
-        const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
-        const dateExpr = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
+        const dateExpr = 'CAST(t.fecha_creacion AS DATE)';
         const conditions = ['1=1'];
         const params = [];
-        // Búsqueda global
         if (search && typeof search === 'string' && search.trim() !== '') {
             const term = `%${search.trim()}%`;
             conditions.push(`(
@@ -46,11 +44,10 @@ async function getTickets(req, res) {
         t.solicitante LIKE ? OR
         t.servicenow LIKE ? OR
         p.nombre LIKE ? OR
-        a.nombre LIKE ?
+        u.nombre LIKE ?
       )`);
             params.push(term, term, term, term, term, term, term, term);
         }
-        // Filtros específicos
         if (prioridad && typeof prioridad === 'string' && prioridad.trim() !== '') {
             conditions.push('t.prioridad = ?');
             params.push(prioridad.trim());
@@ -84,18 +81,16 @@ async function getTickets(req, res) {
             params.push(fecha_hasta.trim());
         }
         const whereClause = conditions.join(' AND ');
-        // Conteo total
         const countSql = `
       SELECT COUNT(*) as total
       FROM tickets t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN plataformas p ON t.plataforma_id = p.id
-      LEFT JOIN agentes a ON t.agente_id = a.id
+      LEFT JOIN usuarios u ON t.agente_id = u.id
       WHERE ${whereClause}
     `;
         const countRes = await db_1.db.get(countSql, params);
         const total = countRes?.total || 0;
-        // Validación y mapeo de ordenamiento
         const allowedSortCols = {
             'id': 't.id',
             'prioridad': 't.prioridad',
@@ -106,7 +101,7 @@ async function getTickets(req, res) {
             'fecha_creacion': 't.fecha_creacion',
             'servicenow': 't.servicenow',
             'turno': 't.turno',
-            'agente': 'a.nombre',
+            'agente': 'u.nombre',
             'estado': 't.estado'
         };
         const sortByParam = String(sort_by).toLowerCase();
@@ -131,7 +126,8 @@ async function getTickets(req, res) {
         t.servicenow,
         t.turno,
         t.agente_id,
-        a.nombre AS agente_nombre,
+        u.nombre AS agente_nombre,
+        u.email AS agente_email,
         t.estado,
         t.fecha_actualizacion,
         t.fecha_cierre,
@@ -139,7 +135,7 @@ async function getTickets(req, res) {
       FROM tickets t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN plataformas p ON t.plataforma_id = p.id
-      LEFT JOIN agentes a ON t.agente_id = a.id
+      LEFT JOIN usuarios u ON t.agente_id = u.id
       WHERE ${whereClause}
       ORDER BY ${resolvedSortBy} ${resolvedDirection}
       LIMIT ${limitNum} OFFSET ${offset}
@@ -188,8 +184,8 @@ async function getTicketById(req, res) {
         t.servicenow,
         t.turno,
         t.agente_id,
-        a.nombre AS agente_nombre,
-        a.email AS agente_email,
+        u.nombre AS agente_nombre,
+        u.email AS agente_email,
         t.estado,
         t.fecha_actualizacion,
         t.fecha_cierre,
@@ -197,7 +193,7 @@ async function getTicketById(req, res) {
       FROM tickets t
       JOIN clientes c ON t.cliente_id = c.id
       JOIN plataformas p ON t.plataforma_id = p.id
-      LEFT JOIN agentes a ON t.agente_id = a.id
+      LEFT JOIN usuarios u ON t.agente_id = u.id
       WHERE t.id = ?
     `;
         const ticket = await db_1.db.get(sql, [id]);
@@ -205,7 +201,6 @@ async function getTicketById(req, res) {
             res.status(404).json({ success: false, message: `Caso #${id} no encontrado.` });
             return;
         }
-        // Consultar historial
         const historySql = `
       SELECT id, ticket_id, usuario_nombre, accion, descripcion, valor_anterior, valor_nuevo, fecha
       FROM historial_ticket
@@ -213,7 +208,6 @@ async function getTicketById(req, res) {
       ORDER BY fecha DESC, id DESC
     `;
         const history = await db_1.db.query(historySql, [id]);
-        // Consultar configuración de ServiceNow Base URL
         const snConfig = await db_1.db.get("SELECT valor FROM configuracion WHERE clave = 'SERVICENOW_BASE_URL'");
         const servicenowBaseUrl = snConfig?.valor || '';
         res.json({
@@ -234,7 +228,6 @@ async function getTicketById(req, res) {
 async function createTicket(req, res) {
     try {
         const { prioridad = 'MEDIO', cliente_id, asunto, descripcion, plataforma_id, solicitante, fecha_creacion, servicenow, turno = 'NA', agente_id, estado = 'ABIERTO' } = req.body;
-        // Validaciones obligatorias
         if (!cliente_id) {
             res.status(400).json({ success: false, message: 'El cliente es obligatorio.' });
             return;
@@ -285,7 +278,6 @@ async function createTicket(req, res) {
         ]);
         const ticketId = result.lastInsertRowid;
         const actorName = req.user?.nombre || 'Agente de Soporte';
-        // Registrar en auditoría / historial
         await db_1.db.run(`INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, valor_nuevo, fecha)
        VALUES (?, ?, ?, ?, ?, ?)`, [
             ticketId,
@@ -319,7 +311,6 @@ async function updateTicket(req, res) {
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
         let newFechaCierre = existing.fecha_cierre;
         let newTiempoMinutos = existing.tiempo_atencion_minutos;
-        // Si cambió a CERRADO
         if (estado && estado === 'CERRADO' && existing.estado !== 'CERRADO') {
             newFechaCierre = now;
             newTiempoMinutos = calculateMinutesDiff(existing.fecha_creacion, now);
@@ -371,13 +362,12 @@ async function updateTicket(req, res) {
             newTiempoMinutos,
             id
         ]);
-        // Registro en auditoría
         if (existing.estado !== updatedEstado) {
             await db_1.db.run(`INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, valor_anterior, valor_nuevo, fecha)
          VALUES (?, ?, ?, ?, ?, ?, ?)`, [id, actorName, 'CAMBIO_ESTADO', `Estado cambiado de ${existing.estado} a ${updatedEstado}`, existing.estado, updatedEstado, now]);
         }
         if (existing.agente_id !== updatedAgenteId) {
-            const newAgent = await db_1.db.get('SELECT nombre FROM agentes WHERE id = ?', [updatedAgenteId]);
+            const newAgent = await db_1.db.get('SELECT nombre FROM usuarios WHERE id = ?', [updatedAgenteId]);
             await db_1.db.run(`INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, valor_anterior, valor_nuevo, fecha)
          VALUES (?, ?, ?, ?, ?, ?, ?)`, [id, actorName, 'CAMBIO_AGENTE', `Caso reasignado a ${newAgent?.nombre || 'Nuevo Agente'}`, String(existing.agente_id), String(updatedAgenteId), now]);
         }
@@ -386,7 +376,7 @@ async function updateTicket(req, res) {
          VALUES (?, ?, ?, ?, ?, ?, ?)`, [id, actorName, 'CAMBIO_PRIORIDAD', `Prioridad modificada de ${existing.prioridad} a ${updatedPrioridad}`, existing.prioridad, updatedPrioridad, now]);
         }
         await db_1.db.run(`INSERT INTO historial_ticket (ticket_id, usuario_nombre, accion, descripcion, fecha)
-       VALUES (?, ?, ?, ?, ?)`, [id, actorName, 'EDICION', `Información del caso actualizada.`, now]);
+       VALUES (?, ?, ?, ?, ?)`, [id, actorName, 'EDICION', 'Información del caso actualizada.', now]);
         res.json({
             success: true,
             message: `Caso #${id} actualizado correctamente.`

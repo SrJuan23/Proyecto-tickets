@@ -41,8 +41,7 @@ export async function getTickets(req: Request, res: Response): Promise<void> {
       limit = 25
     } = req.query;
 
-    const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
-    const dateExpr = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
+    const dateExpr = 'CAST(t.fecha_creacion AS DATE)';
 
     const conditions: string[] = ['1=1'];
     const params: any[] = [];

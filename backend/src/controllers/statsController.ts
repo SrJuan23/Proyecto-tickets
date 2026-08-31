@@ -42,31 +42,30 @@ export async function getKPIs(req: Request, res: Response): Promise<void> {
 export async function getCharts(req: Request, res: Response): Promise<void> {
   try {
     const { periodo = '30d', fecha_desde, fecha_hasta } = req.query;
-    const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
 
     const conditions: string[] = ['1=1'];
     const params: any[] = [];
 
-    const dateField = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : "DATE(t.fecha_creacion)";
-    const monthField = isPostgres ? "TO_CHAR(t.fecha_creacion, 'YYYY-MM')" : "strftime('%Y-%m', t.fecha_creacion)";
+    const dateField = 'CAST(t.fecha_creacion AS DATE)';
+    const monthField = "TO_CHAR(t.fecha_creacion, 'YYYY-MM')";
 
     if (periodo === 'hoy') {
-      conditions.push(isPostgres ? `${dateField} = CURRENT_DATE` : `${dateField} = DATE('now')`);
+      conditions.push(`${dateField} = CURRENT_DATE`);
     } else if (periodo === '7d') {
-      conditions.push(isPostgres ? `${dateField} >= CURRENT_DATE - INTERVAL '7 days'` : `${dateField} >= DATE('now', '-7 days')`);
+      conditions.push(`${dateField} >= CURRENT_DATE - INTERVAL '7 days'`);
     } else if (periodo === '30d') {
-      conditions.push(isPostgres ? `${dateField} >= CURRENT_DATE - INTERVAL '30 days'` : `${dateField} >= DATE('now', '-30 days')`);
+      conditions.push(`${dateField} >= CURRENT_DATE - INTERVAL '30 days'`);
     } else if (periodo === 'este_mes') {
-      conditions.push(isPostgres ? `${monthField} = TO_CHAR(CURRENT_DATE, 'YYYY-MM')` : `${monthField} = strftime('%Y-%m', 'now')`);
+      conditions.push(`${monthField} = TO_CHAR(CURRENT_DATE, 'YYYY-MM')`);
     } else if (periodo === 'mes_anterior') {
-      conditions.push(isPostgres ? `${monthField} = TO_CHAR(CURRENT_DATE - INTERVAL '1 month', 'YYYY-MM')` : `${monthField} = strftime('%Y-%m', 'now', '-1 month')`);
+      conditions.push(`${monthField} = TO_CHAR(CURRENT_DATE - INTERVAL '1 month', 'YYYY-MM')`);
     } else if (periodo === 'rango') {
       if (fecha_desde) {
-        conditions.push(`${dateField} >= DATE(?)`);
+        conditions.push(`${dateField} >= $1`);
         params.push(String(fecha_desde).trim());
       }
       if (fecha_hasta) {
-        conditions.push(`${dateField} <= DATE(?)`);
+        conditions.push(`${dateField} <= $2`);
         params.push(String(fecha_hasta).trim());
       }
     }
@@ -119,7 +118,7 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byClient = await db.query(clientSql, params);
 
-    const trendGroup = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
+    const trendGroup = 'CAST(t.fecha_creacion AS DATE)';
     const trendSql = `
       SELECT
         ${trendGroup} as fecha,

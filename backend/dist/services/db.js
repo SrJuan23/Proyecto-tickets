@@ -4,62 +4,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.db = void 0;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const pg_1 = require("pg");
 dotenv_1.default.config();
 class DatabaseService {
-    sqliteDb = null;
-    mysqlPool = null;
     pgPool = null;
-    isSqlite = true;
-    dbClient = 'sqlite';
-    constructor() {
-        this.dbClient = (process.env.DB_CLIENT || 'sqlite').toLowerCase();
-        this.isSqlite = this.dbClient === 'sqlite';
-    }
     async initialize() {
-        if (this.isSqlite) {
-            const Database = require('better-sqlite3');
-            const dbPath = process.env.DB_SQLITE_PATH || path_1.default.join(__dirname, '../../database/support_desk.sqlite');
-            const dir = path_1.default.dirname(dbPath);
-            if (!fs_1.default.existsSync(dir)) {
-                fs_1.default.mkdirSync(dir, { recursive: true });
-            }
-            this.sqliteDb = new Database(dbPath);
-            this.sqliteDb.pragma('journal_mode = WAL');
-            this.sqliteDb.pragma('foreign_keys = ON');
-            console.log(`[DB] Conectado exitosamente a SQLite: ${dbPath}`);
-            this.initSqliteSchema();
-        }
-        else if (this.dbClient === 'mysql') {
-            const mysql = require('mysql2/promise');
-            this.mysqlPool = mysql.createPool({
-                host: process.env.DB_HOST || 'localhost',
-                port: parseInt(process.env.DB_PORT || '3306'),
-                user: process.env.DB_USER || 'root',
-                password: process.env.DB_PASSWORD || '',
-                database: process.env.DB_NAME || 'support_desk_db',
-                waitForConnections: true,
-                connectionLimit: 10,
-                queueLimit: 0,
-                dateStrings: true,
-                ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined
-            });
-            console.log(`[DB] Conectado exitosamente al pool de MySQL: ${process.env.DB_HOST}:${process.env.DB_PORT}`);
-        }
-        else if (this.dbClient === 'postgres') {
-            const connectionString = process.env.DATABASE_URL || process.env.DB_HOST || '';
-            this.pgPool = new pg_1.Pool({
-                connectionString: connectionString,
-                max: 10
-            });
-            console.log(`[DB] Conectado exitosamente a PostgreSQL`);
-            await this.initPostgresSchema();
-        }
+        const connectionString = process.env.DATABASE_URL || '';
+        this.pgPool = new pg_1.Pool({
+            connectionString: connectionString,
+            max: 10
+        });
+        console.log('[DB] Conectado exitosamente a PostgreSQL');
+        await this.initSchema();
     }
-    async initPostgresSchema() {
+    async initSchema() {
         const schemaSql = `
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -94,16 +53,6 @@ class DatabaseService {
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS agentes (
-        id SERIAL PRIMARY KEY,
-        nombre VARCHAR(150) NOT NULL UNIQUE,
-        email VARCHAR(150) NULL,
-        telefono VARCHAR(50) NULL,
-        especialidad VARCHAR(100) NULL,
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
       CREATE TABLE IF NOT EXISTS tickets (
         id SERIAL PRIMARY KEY,
         prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
@@ -115,7 +64,7 @@ class DatabaseService {
         fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         servicenow VARCHAR(50) NULL,
         turno VARCHAR(10) NOT NULL DEFAULT 'NA',
-        agente_id INTEGER NULL REFERENCES agentes(id),
+        agente_id INTEGER NULL REFERENCES usuarios(id),
         estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
         fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         fecha_cierre TIMESTAMP NULL,
@@ -151,242 +100,30 @@ class DatabaseService {
     `;
         await this.pgPool.query(schemaSql);
         console.log('[DB] Schema PostgreSQL inicializado correctamente');
-        await this.migrateUsuariosTelefonoEspecialidadPostgres();
-    }
-    initSqliteSchema() {
-        const schemaSql = `
-      CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre VARCHAR(150) NOT NULL,
-        email VARCHAR(150) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        rol VARCHAR(50) NOT NULL DEFAULT 'AGENTE',
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        telefono VARCHAR(50) NULL,
-        especialidad VARCHAR(100) NULL,
-        avatar_url VARCHAR(255) NULL,
-        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS clientes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre VARCHAR(200) NOT NULL UNIQUE,
-        nit VARCHAR(50) NULL,
-        contacto_principal VARCHAR(150) NULL,
-        correo_contacto VARCHAR(150) NULL,
-        telefono VARCHAR(50) NULL,
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS plataformas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre VARCHAR(100) NOT NULL UNIQUE,
-        descripcion VARCHAR(255) NULL,
-        color_badge VARCHAR(50) DEFAULT '#0945F7',
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS agentes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre VARCHAR(150) NOT NULL UNIQUE,
-        email VARCHAR(150) NULL,
-        telefono VARCHAR(50) NULL,
-        especialidad VARCHAR(100) NULL,
-        estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
-        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS tickets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
-        cliente_id INTEGER NOT NULL,
-        asunto VARCHAR(255) NOT NULL,
-        descripcion TEXT NOT NULL,
-        plataforma_id INTEGER NOT NULL,
-        solicitante VARCHAR(150) NOT NULL,
-        fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        servicenow VARCHAR(50) NULL,
-        turno VARCHAR(10) NOT NULL DEFAULT 'NA',
-        agente_id INTEGER NULL,
-        estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
-        fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-        fecha_cierre DATETIME NULL,
-        tiempo_atencion_minutos INTEGER NULL,
-        FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-        FOREIGN KEY (plataforma_id) REFERENCES plataformas(id),
-        FOREIGN KEY (agente_id) REFERENCES agentes(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS historial_ticket (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ticket_id INTEGER NOT NULL,
-        usuario_nombre VARCHAR(150) NOT NULL,
-        accion VARCHAR(100) NOT NULL,
-        descripcion TEXT NOT NULL,
-        valor_anterior TEXT NULL,
-        valor_nuevo TEXT NULL,
-        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS configuracion (
-        clave VARCHAR(100) PRIMARY KEY,
-        valor TEXT NOT NULL,
-        descripcion VARCHAR(255) NULL,
-        fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado);
-      CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad);
-      CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id);
-      CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id);
-      CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id);
-      CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno);
-      CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion);
-      CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow);
-    `;
-        this.sqliteDb.exec(schemaSql);
-        this.migrateTicketsAgenteNullable();
-        this.migrateUsuariosTelefonoEspecialidad();
-    }
-    migrateUsuariosTelefonoEspecialidad() {
-        try {
-            const cols = this.sqliteDb.pragma(`table_info(usuarios)`);
-            const colNames = cols.map((c) => c.name);
-            if (!colNames.includes('telefono')) {
-                this.sqliteDb.exec(`ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(50) NULL;`);
-            }
-            if (!colNames.includes('especialidad')) {
-                this.sqliteDb.exec(`ALTER TABLE usuarios ADD COLUMN especialidad VARCHAR(100) NULL;`);
-            }
-        }
-        catch (err) {
-            console.error('[DB] Error en migracion de telefono/especialidad en usuarios:', err);
-        }
-    }
-    async migrateUsuariosTelefonoEspecialidadPostgres() {
-        try {
-            if (!this.pgPool)
-                return;
-            await this.pgPool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefono VARCHAR(50) NULL;`);
-            await this.pgPool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS especialidad VARCHAR(100) NULL;`);
-            console.log('[DB] Migracion PostgreSQL aplicada: telefono y especialidad en usuarios.');
-        }
-        catch (err) {
-            console.error('[DB] Error en migracion PostgreSQL de telefono/especialidad:', err);
-        }
-    }
-    migrateTicketsAgenteNullable() {
-        try {
-            const cols = this.sqliteDb.pragma(`table_info(tickets)`);
-            const agenteCol = cols.find((c) => c.name === 'agente_id');
-            if (!agenteCol || agenteCol.notnull === 0)
-                return;
-            this.sqliteDb.exec(`
-        CREATE TABLE IF NOT EXISTS tickets_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          prioridad VARCHAR(20) NOT NULL DEFAULT 'MEDIO',
-          cliente_id INTEGER NOT NULL,
-          asunto VARCHAR(255) NOT NULL,
-          descripcion TEXT NOT NULL,
-          plataforma_id INTEGER NOT NULL,
-          solicitante VARCHAR(150) NOT NULL,
-          fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          servicenow VARCHAR(50) NULL,
-          turno VARCHAR(10) NOT NULL DEFAULT 'NA',
-          agente_id INTEGER NULL,
-          estado VARCHAR(20) NOT NULL DEFAULT 'ABIERTO',
-          fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-          fecha_cierre DATETIME NULL,
-          tiempo_atencion_minutos INTEGER NULL,
-          FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-          FOREIGN KEY (plataforma_id) REFERENCES plataformas(id),
-          FOREIGN KEY (agente_id) REFERENCES agentes(id)
-        );
-      `);
-            this.sqliteDb.exec(`
-        INSERT INTO tickets_new
-        SELECT id, prioridad, cliente_id, asunto, descripcion, plataforma_id, solicitante, fecha_creacion, servicenow, turno, agente_id, estado, fecha_actualizacion, fecha_cierre, tiempo_atencion_minutos
-        FROM tickets
-      `);
-            this.sqliteDb.exec(`DROP TABLE tickets`);
-            this.sqliteDb.exec(`ALTER TABLE tickets_new RENAME TO tickets`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_estado ON tickets(estado)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_prioridad ON tickets(prioridad)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_cliente ON tickets(cliente_id)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_plataforma ON tickets(plataforma_id)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_agente ON tickets(agente_id)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_turno ON tickets(turno)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_fecha_creacion ON tickets(fecha_creacion)`);
-            this.sqliteDb.exec(`CREATE INDEX IF NOT EXISTS idx_tickets_servicenow ON tickets(servicenow)`);
-            console.log('[DB] Migracion aplicada: agente_id ahora permite NULL en tickets.');
-        }
-        catch (err) {
-            console.error('[DB] Error en migracion de agente_id nullable:', err);
-        }
     }
     async query(sql, params = []) {
-        if (this.isSqlite) {
-            const stmt = this.sqliteDb.prepare(sql);
-            return stmt.all(...params);
-        }
-        else if (this.pgPool) {
-            const res = await this.pgPool.query(this.toPostgresSql(sql), params);
-            return res.rows;
-        }
-        else if (this.mysqlPool) {
-            const [rows] = await this.mysqlPool.execute(sql, params);
-            return rows;
-        }
-        return [];
+        const res = await this.pgPool.query(this.toPostgresSql(sql, params), params);
+        return res.rows;
     }
     async get(sql, params = []) {
-        if (this.isSqlite) {
-            const stmt = this.sqliteDb.prepare(sql);
-            const row = this.sqliteDb.get(sql, params);
-            return row || null;
-        }
-        else if (this.pgPool) {
-            const res = await this.pgPool.query(this.toPostgresSql(sql), params);
-            return res.rows[0] || null;
-        }
-        else if (this.mysqlPool) {
-            const [rows] = await this.mysqlPool.execute(sql, params);
-            const arr = rows;
-            return arr.length > 0 ? arr[0] : null;
-        }
-        return null;
+        const res = await this.pgPool.query(this.toPostgresSql(sql, params), params);
+        return res.rows[0] || null;
     }
     async run(sql, params = []) {
-        if (this.isSqlite) {
-            const stmt = this.sqliteDb.prepare(sql);
-            const info = stmt.run(...params);
-            return {
-                lastInsertRowid: Number(info.lastInsertRowid),
-                changes: info.changes
-            };
-        }
-        else if (this.pgPool) {
-            const res = await this.pgPool.query(this.toPostgresSql(sql), params);
-            return {
-                lastInsertRowid: res.oid ? Number(res.oid) : (res.rowCount || 0),
-                changes: res.rowCount || 0
-            };
-        }
-        else if (this.mysqlPool) {
-            const [result] = await this.mysqlPool.execute(sql, params);
-            return {
-                lastInsertRowid: result.insertId,
-                changes: result.affectedRows
-            };
-        }
-        return {};
+        const res = await this.pgPool.query(this.toPostgresSql(sql, params), params);
+        return {
+            lastInsertRowid: res.oid ? Number(res.oid) : (res.rowCount || 0),
+            changes: res.rowCount || 0
+        };
     }
-    toPostgresSql(sql) {
+    toPostgresSql(sql, params) {
         let parameterIndex = 0;
         return sql.replace(/\?/g, () => `$${++parameterIndex}`);
+    }
+    async close() {
+        if (this.pgPool) {
+            await this.pgPool.end();
+        }
     }
 }
 exports.db = new DatabaseService();

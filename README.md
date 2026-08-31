@@ -74,12 +74,9 @@ Proyecto-tickets/
 │   │   ├── middleware/        # Autenticación JWT y roles
 │   │   ├── models/            # Tipos e interfaces TypeScript
 │   │   ├── routes/            # Enrutadores Express
-│   │   ├── services/          # DB (SQLite/MySQL), Seed data, ExcelJS
+│   │   ├── services/          # DB (PostgreSQL), Seed data, ExcelJS
 │   │   └── server.ts          # Servidor Express
 │   ├── database/
-│   │   ├── schema.sql         # Esquema SQLite / MySQL
-│   │   ├── schema_mysql.sql   # Esquema nativo MySQL 8.0+
-│   │   └── support_desk.sqlite# Base de datos local (cero config)
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/
@@ -169,24 +166,19 @@ El sistema incluye cuentas de prueba precargadas con selector de 1 clic en el mo
 
 ## 🗄️ Configuración de Base de Datos
 
-### SQLite (Por Defecto)
-El sistema funciona inmediatamente **sin instalar servidores adicionales de base de datos**, almacenando la información en `backend/database/support_desk.sqlite` con soporte para transacciones y modo WAL.
+### PostgreSQL (Requerido)
+El sistema utiliza **PostgreSQL** como motor de base de datos.
 
-### MySQL (Opcional)
-Para conectar a un servidor MySQL / MariaDB:
-1. Cree la base de datos en su servidor MySQL:
+1. Instale PostgreSQL en su servidor.
+2. Cree la base de datos y el usuario:
    ```sql
-   CREATE DATABASE support_desk_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER support WITH PASSWORD 'support';
+   CREATE DATABASE support_desk OWNER support;
    ```
-2. Ejecute el script `backend/database/schema_mysql.sql`.
 3. En el archivo `backend/.env`, configure:
    ```env
-   DB_CLIENT=mysql
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=tu_contraseña
-   DB_NAME=support_desk_db
+   DB_CLIENT=postgres
+   DATABASE_URL=postgresql://support:support@localhost:5432/support_desk
    ```
 
 ---

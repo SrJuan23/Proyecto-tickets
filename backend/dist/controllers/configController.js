@@ -9,6 +9,7 @@ exports.getUsers = getUsers;
 exports.createUser = createUser;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
+exports.toggleUserStatus = toggleUserStatus;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const db_1 = require("../services/db");
 const logger_1 = require("../services/logger");
@@ -160,5 +161,26 @@ async function deleteUser(req, res) {
     catch (error) {
         logger_1.logger.error('Error al eliminar usuario', { userId: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ success: false, message: 'Error al eliminar usuario.', error: error.message });
+    }
+}
+async function toggleUserStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const existing = await db_1.db.get('SELECT estado FROM usuarios WHERE id = ?', [id]);
+        if (!existing) {
+            res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+            return;
+        }
+        const newStatus = existing.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+        await db_1.db.run('UPDATE usuarios SET estado = ? WHERE id = ?', [newStatus, id]);
+        res.json({
+            success: true,
+            message: `Usuario marcado como ${newStatus}.`,
+            data: { estado: newStatus }
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Error al cambiar estado del usuario', { userId: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ success: false, message: 'Error al cambiar estado del usuario.', error: error.message });
     }
 }

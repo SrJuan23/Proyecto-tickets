@@ -10,4 +10,5 @@ router.get('/', configController_1.getUsers);
 router.post('/', configController_1.createUser);
 router.put('/:id', configController_1.updateUser);
 router.delete('/:id', configController_1.deleteUser);
+router.patch('/:id/toggle-status', configController_1.toggleUserStatus);
 exports.default = router;

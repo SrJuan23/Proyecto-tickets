@@ -24,8 +24,7 @@ function formatDuration(minutes) {
 }
 async function getFilteredTickets(queryParams) {
     const { search, prioridad, cliente_id, plataforma_id, agente_id, turno, estado, fecha_desde, fecha_hasta, sort_by = 't.id', sort_direction = 'DESC' } = queryParams;
-    const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
-    const dateExpr = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
+    const dateExpr = 'CAST(t.fecha_creacion AS DATE)';
     const conditions = ['1=1'];
     const params = [];
     if (search && typeof search === 'string' && search.trim() !== '') {
@@ -38,7 +37,7 @@ async function getFilteredTickets(queryParams) {
       t.solicitante LIKE ? OR
       t.servicenow LIKE ? OR
       p.nombre LIKE ? OR
-      a.nombre LIKE ?
+      u.nombre LIKE ?
     )`);
         params.push(term, term, term, term, term, term, term, term);
     }
@@ -67,38 +66,38 @@ async function getFilteredTickets(queryParams) {
         params.push(estado.trim());
     }
     if (fecha_desde && typeof fecha_desde === 'string' && fecha_desde.trim() !== '') {
-        conditions.push(isPostgres ? `${dateExpr} >= DATE(?)` : `${dateExpr} >= DATE(?)`);
+        conditions.push(`${dateExpr} >= $1`);
         params.push(fecha_desde.trim());
     }
     if (fecha_hasta && typeof fecha_hasta === 'string' && fecha_hasta.trim() !== '') {
-        conditions.push(isPostgres ? `${dateExpr} <= DATE(?)` : `${dateExpr} <= DATE(?)`);
+        conditions.push(`${dateExpr} <= $2`);
         params.push(fecha_hasta.trim());
     }
     const whereClause = conditions.join(' AND ');
     const sql = `
-      SELECT 
-        t.id,
-        t.prioridad,
-        c.nombre AS cliente_nombre,
-        t.asunto,
-        t.descripcion,
-        p.nombre AS plataforma_nombre,
-        t.solicitante,
-        t.fecha_creacion,
-        t.servicenow,
-        t.turno,
-        a.nombre AS agente_nombre,
-        t.estado,
-        t.fecha_actualizacion,
-        t.fecha_cierre,
-        t.tiempo_atencion_minutos
-      FROM tickets t
-      JOIN clientes c ON t.cliente_id = c.id
-      JOIN plataformas p ON t.plataforma_id = p.id
-      LEFT JOIN agentes a ON t.agente_id = a.id
-      WHERE ${whereClause}
-      ORDER BY t.id DESC
-    `;
+    SELECT
+      t.id,
+      t.prioridad,
+      c.nombre AS cliente_nombre,
+      t.asunto,
+      t.descripcion,
+      p.nombre AS plataforma_nombre,
+      t.solicitante,
+      t.fecha_creacion,
+      t.servicenow,
+      t.turno,
+      u.nombre AS agente_nombre,
+      t.estado,
+      t.fecha_actualizacion,
+      t.fecha_cierre,
+      t.tiempo_atencion_minutos
+    FROM tickets t
+    JOIN clientes c ON t.cliente_id = c.id
+    JOIN plataformas p ON t.plataforma_id = p.id
+    LEFT JOIN usuarios u ON t.agente_id = u.id
+    WHERE ${whereClause}
+    ORDER BY t.id DESC
+  `;
     return await db_1.db.query(sql, params);
 }
 async function exportExcel(req, res) {
@@ -110,7 +109,6 @@ async function exportExcel(req, res) {
         const worksheet = workbook.addWorksheet('Casos de Soporte', {
             views: [{ state: 'frozen', ySplit: 4 }]
         });
-        // Título institucional
         worksheet.mergeCells('A1:L1');
         const titleCell = worksheet.getCell('A1');
         titleCell.value = 'MESA DE AYUDA Y GESTIÓN DE CASOS - REPORTE DETALLADO';
@@ -122,7 +120,6 @@ async function exportExcel(req, res) {
         };
         titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
         worksheet.getRow(1).height = 32;
-        // Subtítulo con metadata
         worksheet.mergeCells('A2:L2');
         const subCell = worksheet.getCell('A2');
         const todayStr = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -130,8 +127,7 @@ async function exportExcel(req, res) {
         subCell.font = { name: 'Lato', size: 10, italic: true, color: { argb: 'FF3B4779' } };
         subCell.alignment = { vertical: 'middle', horizontal: 'center' };
         worksheet.getRow(2).height = 20;
-        worksheet.getRow(3).height = 10; // Espacio
-        // Definición de columnas
+        worksheet.getRow(3).height = 10;
         worksheet.columns = [
             { header: 'ID', key: 'id', width: 10 },
             { header: 'Prioridad', key: 'prioridad', width: 14 },
@@ -167,7 +163,6 @@ async function exportExcel(req, res) {
                 right: { style: 'thin', color: { argb: 'FFD7E2FF' } }
             };
         });
-        // Agregar filas de datos
         rawTickets.forEach((ticket, idx) => {
             const row = worksheet.addRow({
                 id: `#${String(ticket.id).padStart(4, '0')}`,
@@ -256,7 +251,6 @@ async function exportCsv(req, res) {
         const dateStamp = new Date().toISOString().slice(0, 10);
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="reporte_casos_${dateStamp}.csv"`);
-        // Byte order mark UTF-8 BOM for perfect Excel Spanish encoding
         res.write('\uFEFF');
         res.write(csvRows.join('\r\n'));
         res.end();

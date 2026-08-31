@@ -31,8 +31,7 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
     sort_direction = 'DESC'
   } = queryParams;
 
-  const isPostgres = (process.env.DB_CLIENT || 'sqlite').toLowerCase() === 'postgres';
-  const dateExpr = isPostgres ? 'CAST(t.fecha_creacion AS DATE)' : 'DATE(t.fecha_creacion)';
+  const dateExpr = 'CAST(t.fecha_creacion AS DATE)';
 
   const conditions: string[] = ['1=1'];
   const params: any[] = [];
@@ -83,12 +82,12 @@ async function getFilteredTickets(queryParams: any): Promise<any[]> {
   }
 
   if (fecha_desde && typeof fecha_desde === 'string' && fecha_desde.trim() !== '') {
-    conditions.push(isPostgres ? `${dateExpr} >= DATE(?)` : `${dateExpr} >= DATE(?)`);
+    conditions.push(`${dateExpr} >= $1`);
     params.push(fecha_desde.trim());
   }
 
   if (fecha_hasta && typeof fecha_hasta === 'string' && fecha_hasta.trim() !== '') {
-    conditions.push(isPostgres ? `${dateExpr} <= DATE(?)` : `${dateExpr} <= DATE(?)`);
+    conditions.push(`${dateExpr} <= $2`);
     params.push(fecha_hasta.trim());
   }
 
