@@ -2,7 +2,6 @@
 set -euo pipefail
 
 APP_DIR="/opt/support-desk"
-REPO_URL="git@github.com:tu-org/tu-repo.git"
 BRANCH="${1:-main}"
 USER="support"
 NGINX_CONF="/etc/nginx/sites-available/support.conf"
@@ -12,7 +11,7 @@ echo "==> Despliegue Huella de soporte - Rama: ${BRANCH}"
 
 if [ ! -d "${APP_DIR}/.git" ]; then
   echo "==> Clonando repositorio..."
-  git clone "${REPO_URL}" "${APP_DIR}"
+  git clone "https://github.com/SrJuan23/Proyecto-tickets.git" "${APP_DIR}"
 else
   echo "==> Actualizando repositorio..."
   git -C "${APP_DIR}" fetch origin
@@ -22,13 +21,13 @@ fi
 
 echo "==> Instalando dependencias backend..."
 cd "${APP_DIR}/backend"
-sudo -u "${USER}" pnpm install --frozen-lockfile=false
-sudo -u "${USER}" pnpm build
+sudo -u "${USER}" npm ci
+sudo -u "${USER}" npm run build
 
 echo "==> Instalando dependencias frontend..."
 cd "${APP_DIR}/frontend"
-sudo -u "${USER}" pnpm install --frozen-lockfile=false
-sudo -u "${USER}" pnpm build
+sudo -u "${USER}" npm ci
+sudo -u "${USER}" npm run build
 
 echo "==> Asegurando permisos..."
 mkdir -p /var/log/support-desk
