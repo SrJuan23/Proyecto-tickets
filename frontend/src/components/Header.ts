@@ -81,10 +81,6 @@ export class Header {
                 <span>Mi perfil</span>
               </button>
             ` : ''}
-            <button id="switch-user-btn" class="w-full text-left px-4 py-2 text-xs font-lato text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
-              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-              <span>Cambiar de usuario / Demo</span>
-            </button>
             <div class="border-t border-slate-100 pt-1">
               <button id="logout-btn" class="w-full text-left px-4 py-2 text-xs font-lato text-rose-600 hover:bg-rose-50 flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -124,13 +120,6 @@ export class Header {
     openProfileBtn?.addEventListener('click', () => {
       userDropdown?.classList.add('hidden');
       this.openProfileModal();
-    });
-
-    const switchUserBtn = this.container.querySelector('#switch-user-btn');
-    switchUserBtn?.addEventListener('click', () => {
-      userDropdown?.classList.add('hidden');
-      api.clearAuth();
-      window.location.href = '/login';
     });
 
     const logoutBtn = this.container.querySelector('#logout-btn');
