@@ -55,8 +55,9 @@ export class Sidebar {
       <!-- Sidebar Header & Logo -->
       <div class="h-16 flex items-center ${this.isCollapsed ? 'justify-center px-2' : 'justify-between px-5'} border-b border-white/10 bg-brand-dark/95">
         <div class="flex items-center gap-3 overflow-hidden cursor-pointer" id="sidebar-logo">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-primary to-brand-cyan flex items-center justify-center text-white shadow-brand flex-shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-primary to-brand-cyan flex items-center justify-center shadow-brand flex-shrink-0 overflow-hidden">
+            <img src="/img/logo.png" alt="Logo" class="w-7 h-7 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <svg class="w-6 h-6 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 12 2 2 4-4"></path>
             </svg>

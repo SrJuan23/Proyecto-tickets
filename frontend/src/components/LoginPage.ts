@@ -15,8 +15,9 @@ export class LoginPage {
           <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <!-- Header -->
             <div class="p-8 bg-gradient-to-br from-brand-dark via-brand-dark to-[#0f1738] text-white text-center relative">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-cyan text-white flex items-center justify-center mx-auto mb-4 shadow-brand">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 12 2 2 4-4"></path></svg>
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-cyan flex items-center justify-center mx-auto mb-4 shadow-brand overflow-hidden">
+                <img src="/img/logo.png" alt="Logo" class="w-10 h-10 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <svg class="w-7 h-7 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 12 2 2 4-4"></path></svg>
               </div>
               <h1 class="text-2xl font-montserrat font-bold tracking-tight">Huella de soporte</h1>
               <p class="text-xs font-lato text-slate-300 mt-1">Registro de casos</p>

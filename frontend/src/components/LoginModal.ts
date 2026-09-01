@@ -23,8 +23,9 @@ export class LoginModal {
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
 
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-cyan text-white flex items-center justify-center mx-auto mb-3 shadow-brand">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-cyan flex items-center justify-center mx-auto mb-3 shadow-brand overflow-hidden">
+            <img src="/img/logo.png" alt="Logo" class="w-8 h-8 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <svg class="w-6 h-6 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           </div>
           <h2 class="text-xl font-montserrat font-bold tracking-tight">Huella de soporte</h2>
           <p class="text-xs font-lato text-slate-300 mt-0.5">Registro de casos</p>
