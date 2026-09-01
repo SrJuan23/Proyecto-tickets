@@ -27,7 +27,12 @@ async function ensureClient(nombre: string): Promise<number> {
 
 async function ensurePlataforma(nombre: string): Promise<number> {
   const trimmed = nombre.trim();
-  if (!trimmed) return 0;
+  if (!trimmed) {
+    const found = await pool.query("SELECT id FROM plataformas WHERE nombre = 'Sin Plataforma'");
+    if (found.rows[0]) return found.rows[0].id;
+    const inserted = await pool.query("INSERT INTO plataformas (nombre, estado, color_badge) VALUES ('Sin Plataforma', 'ACTIVO', '#6B7280') RETURNING id");
+    return inserted.rows[0].id;
+  }
   const found = await pool.query('SELECT id FROM plataformas WHERE LOWER(nombre)=LOWER($1)', [trimmed]);
   if (found.rows[0]) return found.rows[0].id;
 
