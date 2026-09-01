@@ -87,7 +87,8 @@ export async function login(req: Request, res: Response): Promise<void> {
           email: user.email,
           rol: user.rol,
           avatar_url: user.avatar_url,
-          fecha_creacion: user.fecha_creacion
+          fecha_creacion: user.fecha_creacion,
+          password_change_required: user.password_change_required
         }
       }
     });
@@ -134,5 +135,46 @@ export async function getDemoAccounts(req: Request, res: Response): Promise<void
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Error al consultar cuentas demo.', error: error.message });
+  }
+}
+
+export async function changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'No autenticado.' });
+      return;
+    }
+
+    const { current_password, new_password } = req.body;
+
+    if (!new_password || new_password.length < 6) {
+      res.status(400).json({ success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+      return;
+    }
+
+    const user = await db.get('SELECT * FROM usuarios WHERE id = ?', [req.user.id]);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+      return;
+    }
+
+    if (current_password) {
+      const isValid = await bcrypt.compare(current_password, user.password_hash);
+      if (!isValid) {
+        res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
+        return;
+      }
+    }
+
+    const newHash = await bcrypt.hash(new_password, 10);
+    await db.run(
+      'UPDATE usuarios SET password_hash = ?, password_change_required = false WHERE id = ?',
+      [newHash, req.user.id]
+    );
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (error: any) {
+    logger.error('Error al cambiar contraseña', { error: error.message, stack: error.stack });
+    res.status(500).json({ success: false, message: 'Error al cambiar contraseña.', error: error.message });
   }
 }

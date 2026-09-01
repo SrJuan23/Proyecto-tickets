@@ -65,14 +65,15 @@ export async function createAgent(req: AuthenticatedRequest, res: Response): Pro
     const passwordHash = password ? await require('bcryptjs').hash(password, 10) : null;
 
     const result = await db.run(
-      `INSERT INTO usuarios (nombre, email, telefono, especialidad, estado, rol, password_hash) VALUES (?, ?, ?, ?, ?, 'AGENTE', ?)`,
+      `INSERT INTO usuarios (nombre, email, telefono, especialidad, estado, rol, password_hash, password_change_required) VALUES (?, ?, ?, ?, ?, 'AGENTE', ?, ?)`,
       [
         nombre.trim(),
         email ? email.trim() : null,
         telefono ? telefono.trim() : null,
         especialidad ? especialidad.trim() : null,
         estado || 'ACTIVO',
-        passwordHash
+        passwordHash,
+        true
       ]
     );
 

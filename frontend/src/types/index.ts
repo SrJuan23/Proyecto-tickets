@@ -10,6 +10,7 @@ export interface User {
   email: string;
   rol: RolUsuario;
   estado: EstadoEntidad;
+  password_change_required?: boolean;
   telefono?: string;
   especialidad?: string;
   avatar_url?: string;

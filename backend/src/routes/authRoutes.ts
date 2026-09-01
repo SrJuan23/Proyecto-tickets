@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, getMe, getDemoAccounts } from '../controllers/authController';
+import { login, getMe, getDemoAccounts, changePassword } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
 import { body } from 'express-validator';
 
@@ -12,5 +12,8 @@ router.post('/login', [
 
 router.get('/me', authenticateToken, getMe);
 router.get('/demo-accounts', getDemoAccounts);
+router.post('/change-password', authenticateToken, [
+  body('new_password').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres.')
+], changePassword);
 
 export default router;

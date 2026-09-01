@@ -33,6 +33,7 @@ class DatabaseService {
         password_hash VARCHAR(255) NOT NULL,
         rol VARCHAR(50) NOT NULL DEFAULT 'AGENTE',
         estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+        password_change_required BOOLEAN NOT NULL DEFAULT TRUE,
         telefono VARCHAR(50) NULL,
         especialidad VARCHAR(100) NULL,
         avatar_url VARCHAR(255) NULL,
@@ -107,6 +108,17 @@ class DatabaseService {
 
     await this.pgPool!.query(schemaSql);
     console.log('[DB] Schema PostgreSQL inicializado correctamente');
+    await this.migratePasswordChangeRequired();
+  }
+
+  private async migratePasswordChangeRequired(): Promise<void> {
+    try {
+      if (!this.pgPool) return;
+      await this.pgPool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS password_change_required BOOLEAN NOT NULL DEFAULT TRUE;`);
+      console.log('[DB] Migración aplicada: password_change_required en usuarios.');
+    } catch (err) {
+      console.error('[DB] Error en migración de password_change_required:', err);
+    }
   }
 
   public async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {

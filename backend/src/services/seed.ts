@@ -20,8 +20,8 @@ export async function seedDatabase(): Promise<void> {
   const adminPass = await bcrypt.hash('admin123', 10);
 
   await db.run(
-    `INSERT INTO usuarios (nombre, email, password_hash, rol, estado, telefono, especialidad) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ['Administrador', 'admin@supportdesk.com', adminPass, 'ADMIN', 'ACTIVO', null, null]
+    `INSERT INTO usuarios (nombre, email, password_hash, rol, estado, password_change_required, telefono, especialidad) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ['Administrador', 'admin@supportdesk.com', adminPass, 'ADMIN', 'ACTIVO', false, null, null]
   );
 
   await db.run(

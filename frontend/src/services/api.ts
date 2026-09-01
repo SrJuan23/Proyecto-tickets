@@ -106,6 +106,13 @@ class ApiService {
     return this.request<User[]>('/auth/demo-accounts');
   }
 
+  async changePassword(newPassword: string, currentPassword?: string) {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ new_password: newPassword, current_password: currentPassword })
+    });
+  }
+
   async getTickets(filters: TicketFilters = {}) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, val]) => {

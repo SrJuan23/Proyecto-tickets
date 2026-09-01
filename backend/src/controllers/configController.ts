@@ -96,8 +96,8 @@ export async function createUser(req: AuthenticatedRequest, res: Response): Prom
 
     const passHash = await bcrypt.hash(password, 10);
     const result = await db.run(
-      `INSERT INTO usuarios (nombre, email, password_hash, rol, estado) VALUES (?, ?, ?, ?, ?)`,
-      [nombre.trim(), email.trim().toLowerCase(), passHash, rol, estado]
+      `INSERT INTO usuarios (nombre, email, password_hash, rol, estado, password_change_required) VALUES (?, ?, ?, ?, ?, ?)`,
+      [nombre.trim(), email.trim().toLowerCase(), passHash, rol, estado, true]
     );
 
     res.status(201).json({
