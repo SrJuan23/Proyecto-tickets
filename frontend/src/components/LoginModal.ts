@@ -31,68 +31,6 @@ export class LoginModal {
         </div>
 
         <div class="p-6 space-y-5">
-          <!-- 1-Click Demo Profiles -->
-          <div>
-            <span class="block text-[11px] font-montserrat font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Acceso Rápido / Cuentas Demo
-            </span>
-            <div class="grid grid-cols-2 gap-2">
-              <button 
-                data-demo-email="admin@supportdesk.com" 
-                data-demo-pass="admin123"
-                class="demo-login-btn p-2.5 rounded-xl border border-slate-200 hover:border-brand-primary hover:bg-brand-primary-light/40 text-left transition-all group"
-              >
-                <div class="font-montserrat font-bold text-xs text-slate-800 flex items-center justify-between">
-                  <span>Administrador</span>
-                  <span class="text-[9px] bg-brand-primary-light text-brand-primary px-1.5 py-0.5 rounded font-bold">ADMIN</span>
-                </div>
-                <span class="text-[10px] text-slate-400 truncate block mt-0.5 font-mono">admin@...</span>
-              </button>
-
-              <button 
-                data-demo-email="didier.santamaria@supportdesk.com" 
-                data-demo-pass="agente123"
-                class="demo-login-btn p-2.5 rounded-xl border border-slate-200 hover:border-brand-primary hover:bg-brand-primary-light/40 text-left transition-all group"
-              >
-                <div class="font-montserrat font-bold text-xs text-slate-800 flex items-center justify-between">
-                  <span>Didier S.</span>
-                  <span class="text-[9px] bg-cyan-50 text-cyan-700 px-1.5 py-0.5 rounded font-bold">AGENTE</span>
-                </div>
-                <span class="text-[10px] text-slate-400 truncate block mt-0.5 font-mono">didier.s...@...</span>
-              </button>
-
-              <button 
-                data-demo-email="bryan.sanchez@supportdesk.com" 
-                data-demo-pass="agente123"
-                class="demo-login-btn p-2.5 rounded-xl border border-slate-200 hover:border-brand-primary hover:bg-brand-primary-light/40 text-left transition-all group"
-              >
-                <div class="font-montserrat font-bold text-xs text-slate-800 flex items-center justify-between">
-                  <span>Bryan S.</span>
-                  <span class="text-[9px] bg-cyan-50 text-cyan-700 px-1.5 py-0.5 rounded font-bold">AGENTE</span>
-                </div>
-                <span class="text-[10px] text-slate-400 truncate block mt-0.5 font-mono">bryan.s...@...</span>
-              </button>
-
-              <button 
-                data-demo-email="consulta@supportdesk.com" 
-                data-demo-pass="consulta123"
-                class="demo-login-btn p-2.5 rounded-xl border border-slate-200 hover:border-brand-primary hover:bg-brand-primary-light/40 text-left transition-all group"
-              >
-                <div class="font-montserrat font-bold text-xs text-slate-800 flex items-center justify-between">
-                  <span>Auditor</span>
-                  <span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">CONSULTA</span>
-                </div>
-                <span class="text-[10px] text-slate-400 truncate block mt-0.5 font-mono">consulta@...</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3">
-            <div class="h-px bg-slate-200 flex-1"></div>
-            <span class="text-[11px] text-slate-400 font-lato">o ingresa con tus credenciales</span>
-            <div class="h-px bg-slate-200 flex-1"></div>
-          </div>
-
           <!-- Login Form -->
           <form id="login-form" class="space-y-4 text-xs font-lato">
             <div>
@@ -158,23 +96,6 @@ export class LoginModal {
         btn.disabled = false;
         btn.innerHTML = `<span>Iniciar Sesión</span>`;
       }
-    });
-
-    // Demo buttons
-    modal.querySelectorAll('.demo-login-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const email = btn.getAttribute('data-demo-email') || '';
-        const pass = btn.getAttribute('data-demo-pass') || '';
-
-        const emailInput = modal.querySelector('#login-email') as HTMLInputElement;
-        const passInput = modal.querySelector('#login-password') as HTMLInputElement;
-
-        if (emailInput) emailInput.value = email;
-        if (passInput) passInput.value = pass;
-
-        // Auto submit
-        form.dispatchEvent(new Event('submit'));
-      });
     });
 
     modalContainer.appendChild(modal);
