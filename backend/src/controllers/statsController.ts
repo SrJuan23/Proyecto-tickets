@@ -104,6 +104,7 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
       WHERE u.rol = 'AGENTE'
       GROUP BY u.id
       ORDER BY cantidad DESC
+      LIMIT 10
     `;
     const byAgent = await db.query(agentSql, params);
 
@@ -118,7 +119,7 @@ export async function getCharts(req: Request, res: Response): Promise<void> {
     `;
     const byClient = await db.query(clientSql, params);
 
-    const trendGroup = 'CAST(t.fecha_creacion AS DATE)';
+    const trendGroup = "TO_CHAR(t.fecha_creacion, 'YYYY-MM')";
     const trendSql = `
       SELECT
         ${trendGroup} as fecha,
