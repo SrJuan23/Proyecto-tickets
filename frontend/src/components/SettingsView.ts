@@ -293,8 +293,7 @@ export class SettingsView {
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre Completo *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo *</label><input type="email" name="email" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contraseña *</label><input type="password" name="password" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Especialidad</label><input type="text" name="especialidad" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Rol *</label><select name="rol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"><option value="AGENTE">AGENTE</option><option value="ADMIN">ADMIN</option><option value="CONSULTA">CONSULTA</option></select></div>
         `;
       case 'clients':
         return `
@@ -320,7 +319,7 @@ export class SettingsView {
 
     switch (this.activeTab) {
       case 'users':
-        await api.createUser({ nombre: data.nombre, email: data.email, password: data.password, telefono: data.telefono, especialidad: data.especialidad });
+        await api.createUser({ nombre: data.nombre, email: data.email, password: data.password, rol: data.rol });
         break;
       case 'clients':
         await api.createClient({ nombre: data.nombre, nit: data.nit, contacto_principal: data.contacto_principal, correo_contacto: data.correo_contacto, telefono: data.telefono });
