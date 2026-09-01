@@ -6,7 +6,7 @@ import { logger } from '../services/logger';
 export async function getAgents(req: Request, res: Response): Promise<void> {
   try {
     const { search, estado } = req.query;
-    const conditions: string[] = ["rol = 'AGENTE'"];
+    const conditions: string[] = ["rol = 'AGENTE'", "estado = 'ACTIVO'"];
     const params: any[] = [];
 
     if (search && typeof search === 'string' && search.trim() !== '') {
@@ -15,7 +15,7 @@ export async function getAgents(req: Request, res: Response): Promise<void> {
       params.push(term, term, term);
     }
 
-    if (estado && typeof estado === 'string' && estado !== 'all') {
+    if (estado && typeof estado === 'string' && estado !== 'all' && estado !== 'ACTIVO') {
       conditions.push('estado = ?');
       params.push(estado);
     }

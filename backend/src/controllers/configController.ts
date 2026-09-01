@@ -81,7 +81,7 @@ export async function getUsers(req: AuthenticatedRequest, res: Response): Promis
 
 export async function createUser(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const { nombre, email, password, rol = 'AGENTE', estado = 'ACTIVO' } = req.body;
+    const { nombre, email, password, rol = 'AGENTE', estado = 'ACTIVO', telefono, especialidad } = req.body;
 
     if (!nombre || !email || !password) {
       res.status(400).json({ success: false, message: 'Nombre, email y contraseña son obligatorios.' });
@@ -96,8 +96,8 @@ export async function createUser(req: AuthenticatedRequest, res: Response): Prom
 
     const passHash = await bcrypt.hash(password, 10);
     const result = await db.run(
-      `INSERT INTO usuarios (nombre, email, password_hash, rol, estado, password_change_required) VALUES (?, ?, ?, ?, ?, ?)`,
-      [nombre.trim(), email.trim().toLowerCase(), passHash, rol, estado, true]
+      `INSERT INTO usuarios (nombre, email, password_hash, rol, estado, password_change_required, telefono, especialidad) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre.trim(), email.trim().toLowerCase(), passHash, rol, estado, true, telefono?.trim() || null, especialidad?.trim() || null]
     );
 
     res.status(201).json({
@@ -149,8 +149,8 @@ export async function updateUser(req: AuthenticatedRequest, res: Response): Prom
         passHash,
         finalRol !== undefined ? finalRol : existing.rol,
         estado !== undefined ? estado : existing.estado,
-        telefono !== undefined ? telefono : existing.telefono,
-        especialidad !== undefined ? especialidad : existing.especialidad,
+        telefono !== undefined ? (telefono?.trim() || null) : existing.telefono,
+        especialidad !== undefined ? (especialidad?.trim() || null) : existing.especialidad,
         id
       ]
     );

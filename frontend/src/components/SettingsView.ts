@@ -170,6 +170,7 @@ export class SettingsView {
             <tr class="hover:bg-slate-50 transition-colors">
               ${rowHtml(item)}
               <td class="py-3 px-4 text-right">
+                <button data-edit-${type}="${item.id}" class="text-xs text-brand-primary hover:text-brand-primary-hover font-semibold p-1 mr-2">Editar</button>
                 <button data-toggle-${type}="${item.id}" class="text-xs text-amber-600 hover:text-amber-800 font-semibold p-1 mr-2">${item.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}</button>
                 <button data-delete-${type}="${item.id}" class="text-xs text-rose-600 hover:text-rose-800 font-semibold p-1">Eliminar</button>
               </td>
@@ -194,6 +195,13 @@ export class SettingsView {
   }
 
   private bindTableActions(container: HTMLElement, type: string, apiInstance: any, toggleName: string, deleteName: string): void {
+    container.querySelectorAll(`[data-edit-${type}]`).forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.getAttribute(`data-edit-${type}`));
+        this.openEditEntityModal(id);
+      });
+    });
+
     container.querySelectorAll(`[data-toggle-${type}]`).forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = Number(btn.getAttribute(`data-toggle-${type}`));
@@ -285,7 +293,8 @@ export class SettingsView {
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre Completo *</label><input type="text" name="nombre" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo *</label><input type="email" name="email" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
           <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contraseña *</label><input type="password" name="password" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
-          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Rol *</label><select name="rol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"><option value="AGENTE">AGENTE</option><option value="ADMIN">ADMIN</option><option value="CONSULTA">CONSULTA</option></select></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Especialidad</label><input type="text" name="especialidad" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
         `;
       case 'clients':
         return `
@@ -311,13 +320,126 @@ export class SettingsView {
 
     switch (this.activeTab) {
       case 'users':
-        await api.createUser({ nombre: data.nombre, email: data.email, password: data.password, rol: data.rol });
+        await api.createUser({ nombre: data.nombre, email: data.email, password: data.password, telefono: data.telefono, especialidad: data.especialidad });
         break;
       case 'clients':
         await api.createClient({ nombre: data.nombre, nit: data.nit, contacto_principal: data.contacto_principal, correo_contacto: data.correo_contacto, telefono: data.telefono });
         break;
       case 'platforms':
         await api.createPlatform({ nombre: data.nombre, descripcion: data.descripcion, color_badge: data.color_badge });
+        break;
+    }
+  }
+
+  private async openEditEntityModal(id: number): Promise<void> {
+    const modalContainer = document.getElementById('modal-container');
+    if (!modalContainer) return;
+
+    let entity: any = null;
+    try {
+      if (this.activeTab === 'users') entity = this.users.find((u) => u.id === id);
+      else if (this.activeTab === 'clients') entity = this.clients.find((c) => c.id === id);
+      else if (this.activeTab === 'platforms') entity = this.platforms.find((p) => p.id === id);
+    } catch (err) {
+      toast.error('No se pudo cargar la entidad.');
+      return;
+    }
+
+    if (!entity) {
+      toast.error('Entidad no encontrada.');
+      return;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in';
+
+    modal.innerHTML = `
+      <div class="bg-white rounded-3xl max-w-md w-full shadow-modal border border-slate-100 overflow-hidden">
+        <div class="px-6 py-4 bg-brand-dark text-white flex items-center justify-between">
+          <h3 class="text-sm font-montserrat font-bold">Editar ${this.getSingularTitle()}</h3>
+          <button id="close-e-modal" class="p-1.5 text-slate-400 hover:text-white rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <form id="entity-edit-form" class="p-6 space-y-4 text-xs font-lato">
+          ${this.getEditFormContent(entity)}
+          <div class="pt-4 flex items-center justify-end gap-2 border-t border-slate-100">
+            <button type="button" id="cancel-e-modal" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-montserrat font-semibold rounded-xl">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white font-montserrat font-bold rounded-xl shadow-brand">Guardar</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('#close-e-modal')?.addEventListener('click', closeModal);
+    modal.querySelector('#cancel-e-modal')?.addEventListener('click', closeModal);
+
+    const form = modal.querySelector('#entity-edit-form') as HTMLFormElement;
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      try {
+        await this.submitEditEntityForm(formData, id);
+        toast.success('Actualizado correctamente.');
+        closeModal();
+        await this.fetchTabData();
+      } catch (err: any) {
+        toast.error(err.message || 'Error al guardar.');
+      }
+    });
+
+    modalContainer.appendChild(modal);
+  }
+
+  private getSingularTitle(): string {
+    switch (this.activeTab) {
+      case 'users': return 'Usuario';
+      case 'clients': return 'Cliente';
+      case 'platforms': return 'Plataforma';
+    }
+    return 'Registro';
+  }
+
+  private getEditFormContent(entity: any): string {
+    switch (this.activeTab) {
+      case 'users':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre Completo *</label><input type="text" name="nombre" value="${entity.nombre || ''}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo *</label><input type="email" name="email" value="${entity.email || ''}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contraseña (dejar vacío para no cambiar)</label><input type="password" name="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" value="${entity.telefono || ''}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Especialidad</label><input type="text" name="especialidad" value="${entity.especialidad || ''}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+        `;
+      case 'clients':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" name="nombre" value="${entity.nombre || ''}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">NIT</label><input type="text" name="nit" value="${entity.nit || ''}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Contacto</label><input type="text" name="contacto_principal" value="${entity.contacto_principal || ''}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Correo</label><input type="email" name="correo_contacto" value="${entity.correo_contacto || ''}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Teléfono</label><input type="text" name="telefono" value="${entity.telefono || ''}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+        `;
+      case 'platforms':
+        return `
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" name="nombre" value="${entity.nombre || ''}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none" /></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Descripción</label><textarea name="descripcion" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none">${entity.descripcion || ''}</textarea></div>
+          <div><label class="block font-montserrat font-semibold text-slate-700 mb-1">Color Badge</label><input type="color" name="color_badge" value="${entity.color_badge || '#0945F7'}" class="w-10 h-10 p-0.5 rounded-xl border border-slate-200 cursor-pointer" /></div>
+        `;
+    }
+    return '';
+  }
+
+  private async submitEditEntityForm(formData: FormData, id: number): Promise<void> {
+    const data: any = {};
+    formData.forEach((value, key) => { data[key] = value; });
+
+    switch (this.activeTab) {
+      case 'users':
+        await api.updateUser(id, { nombre: data.nombre, email: data.email, password: data.password || undefined, telefono: data.telefono, especialidad: data.especialidad });
+        break;
+      case 'clients':
+        await api.updateClient(id, { nombre: data.nombre, nit: data.nit, contacto_principal: data.contacto_principal, correo_contacto: data.correo_contacto, telefono: data.telefono });
+        break;
+      case 'platforms':
+        await api.updatePlatform(id, { nombre: data.nombre, descripcion: data.descripcion, color_badge: data.color_badge });
         break;
     }
   }
