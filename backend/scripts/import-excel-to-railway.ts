@@ -121,6 +121,20 @@ async function run() {
       agenteId = await ensureAgente(atendidoPor);
     }
 
+    const servicenow = get('ServiceNow') ? String(get('ServiceNow')).trim() : null;
+    const asuntoTrim = String(asunto).trim();
+    const solicitanteTrim = String(solicitante).trim();
+
+    const duplicateCheck = servicenow
+      ? 'SELECT id FROM tickets WHERE servicenow = $1 LIMIT 1'
+      : 'SELECT id FROM tickets WHERE asunto = $1 AND solicitante = $2 AND fecha_creacion = $3 LIMIT 1';
+    const duplicateParams = servicenow ? [servicenow] : [asuntoTrim, solicitanteTrim, fechaCreacion];
+    const existing = await pool.query(duplicateCheck, duplicateParams);
+    if (existing.rows[0]) {
+      skipped++;
+      continue;
+    }
+
     await pool.query(
       `INSERT INTO tickets (
         prioridad, cliente_id, asunto, descripcion, plataforma_id, solicitante,
@@ -135,7 +149,7 @@ async function run() {
         plataformaId || null,
         String(solicitante).trim(),
         fechaCreacion,
-        get('ServiceNow') ? String(get('ServiceNow')).trim() : null,
+        servicenow,
         String(get('Turno Atendido') || 'NA').toUpperCase(),
         agenteId,
         'ABIERTO',
